@@ -81,6 +81,8 @@ import com.t8rin.imagetoolbox.core.ui.widget.utils.AutoContentBasedColors
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawBehavior
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.BitmapDrawer
+import com.t8rin.imagetoolbox.feature.draw.presentation.components.QuickCropData
+import com.t8rin.imagetoolbox.feature.draw.presentation.components.QuickCropOverlay
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentSecondaryControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupTool
@@ -169,6 +171,9 @@ fun DrawContent(
     }
     var quickMarkupText by rememberSaveable(component.drawBehavior) {
         mutableStateOf("文字")
+    }
+    var quickCropData by remember(component.drawBehavior) {
+        mutableStateOf<QuickCropData?>(null)
     }
 
     val drawMode = component.drawMode
@@ -330,7 +335,16 @@ fun DrawContent(
                 onTextValueChange = { quickMarkupText = it },
                 onDrawColorChange = { drawColor = it },
                 onStrokeWidthChange = { strokeWidth = it },
-                onAlphaChange = { alpha = it }
+                onAlphaChange = { alpha = it },
+                onCropClick = {
+                    component.prepareCrop { bitmap, uri, size ->
+                        quickCropData = QuickCropData(
+                            bitmap = bitmap,
+                            uri = uri,
+                            imageSize = size
+                        )
+                    }
+                }
             )
         },
         buttons = {
@@ -376,6 +390,17 @@ fun DrawContent(
         canShowScreenData = component.drawBehavior !is DrawBehavior.None,
         showActionsInTopAppBar = false,
         mainContentWeight = 0.78f
+    )
+
+    QuickCropOverlay(
+        data = quickCropData,
+        onDismiss = {
+            quickCropData = null
+        },
+        onApplied = { uri ->
+            quickCropData = null
+            component.setUri(uri)
+        }
     )
 
     LoadingDialog(
