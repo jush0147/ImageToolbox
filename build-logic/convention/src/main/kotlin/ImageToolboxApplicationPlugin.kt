@@ -20,7 +20,6 @@ import com.t8rin.imagetoolbox.configureCompose
 import com.t8rin.imagetoolbox.configureDetekt
 import com.t8rin.imagetoolbox.configureKotlinAndroid
 import com.t8rin.imagetoolbox.core
-import com.t8rin.imagetoolbox.crash
 import com.t8rin.imagetoolbox.data
 import com.t8rin.imagetoolbox.di
 import com.t8rin.imagetoolbox.domain
@@ -45,8 +44,6 @@ class ImageToolboxApplicationPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = "com.android.application")
             apply(plugin = "kotlin-parcelize")
-            apply(plugin = "com.google.gms.google-services")
-            apply(plugin = "com.google.firebase.crashlytics")
             apply(plugin = "com.mikepenz.aboutlibraries.plugin.android")
             apply(plugin = "org.jetbrains.kotlin.plugin.compose")
             apply(plugin = "io.gitlab.arturbosch.detekt")
@@ -69,7 +66,6 @@ class ImageToolboxApplicationPlugin : Plugin<Project> {
                 implementation(projects.core.resources)
                 implementation(projects.core.settings)
                 implementation(projects.core.di)
-                implementation(projects.core.crash)
                 implementation(projects.core.utils)
             }
 
