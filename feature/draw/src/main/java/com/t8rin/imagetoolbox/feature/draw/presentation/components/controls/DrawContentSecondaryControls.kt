@@ -17,8 +17,8 @@ internal fun DrawContentSecondaryControls(
     component: DrawComponent
 ) {
     UndoRedoButtons(
-        canUndo = component.lastPaths.isNotEmpty() || component.paths.isNotEmpty(),
-        canRedo = component.undonePaths.isNotEmpty(),
+        canUndo = component.canUndo,
+        canRedo = component.canRedo,
         onUndo = component::undo,
         onRedo = component::redo
     )
