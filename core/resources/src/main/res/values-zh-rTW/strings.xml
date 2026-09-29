@@ -5492,4 +5492,7 @@
     <string name="quick_markup_width_medium">中</string>
     <string name="quick_markup_width_thick">粗</string>
 
+
+    <string name="quick_markup_number">編號</string>
+
 </resources>
