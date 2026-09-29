@@ -31,8 +31,7 @@ import com.t8rin.imagetoolbox.core.settings.domain.model.SettingsState
 import com.t8rin.imagetoolbox.core.settings.domain.toSimpleSettingsInteractor
 import com.t8rin.imagetoolbox.core.settings.presentation.model.toUiState
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.LocalSimpleSettingsInteractor
-import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.LocalImagePickerEventEmitter
-import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.rememberImagePickerEventEmitter
+import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.ProvideImagePickerEventEmitter
 import com.t8rin.imagetoolbox.core.ui.utils.navigation.Screen
 import com.t8rin.imagetoolbox.core.ui.utils.provider.ImageToolboxCompositionLocals
 import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalKeepAliveService
@@ -93,20 +92,21 @@ class AppActivity : AppCompatActivity() {
         }
 
         setContent {
-            CompositionLocalProvider(
-                LocalSimpleSettingsInteractor provides settingsManager.toSimpleSettingsInteractor(),
-                LocalMetadataProvider provides fileController.toMetadataProvider(),
-                LocalKeepAliveService provides keepAliveService,
-                LocalImagePickerEventEmitter provides rememberImagePickerEventEmitter(),
-                LocalResourceManager provides resourceManager,
-                LocalWindowSizeClass provides calculateWindowSizeClass(this)
-            ) {
-                ImageToolboxCompositionLocals(
-                    settingsState = settingsState.toUiState(),
-                    currentScreen = Screen.Draw(),
-                    onNavigate = {}
+            ProvideImagePickerEventEmitter {
+                CompositionLocalProvider(
+                    LocalSimpleSettingsInteractor provides settingsManager.toSimpleSettingsInteractor(),
+                    LocalMetadataProvider provides fileController.toMetadataProvider(),
+                    LocalKeepAliveService provides keepAliveService,
+                    LocalResourceManager provides resourceManager,
+                    LocalWindowSizeClass provides calculateWindowSizeClass(this)
                 ) {
-                    DrawContent(component = component)
+                    ImageToolboxCompositionLocals(
+                        settingsState = settingsState.toUiState(),
+                        currentScreen = Screen.Draw(),
+                        onNavigate = {}
+                    ) {
+                        DrawContent(component = component)
+                    }
                 }
             }
         }
