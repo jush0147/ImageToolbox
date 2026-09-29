@@ -126,8 +126,10 @@ fun Intent?.handleDeeplinks(
                                 else -> {
                                     if (type?.contains("gif") == true) {
                                         onHasExtraDataType(ExtraDataType.Gif)
+                                        onGetUris(listOf(it))
+                                    } else {
+                                        onNavigate(Screen.Draw(it))
                                     }
-                                    onGetUris(listOf(it))
                                 }
                             }
                         }
