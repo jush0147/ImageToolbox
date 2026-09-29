@@ -333,6 +333,8 @@ fun DrawContent(
                 onToolChange = { quickMarkupTool = it },
                 textValue = quickMarkupText,
                 onTextValueChange = { quickMarkupText = it },
+                drawColor = drawColor,
+                strokeWidth = strokeWidth,
                 onDrawColorChange = { drawColor = it },
                 onStrokeWidthChange = { strokeWidth = it },
                 onAlphaChange = { alpha = it },
