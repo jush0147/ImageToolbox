@@ -25,7 +25,10 @@ plugins {
 }
 
 android {
-    val supportedAbi = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64")
+    val requestedAbi = providers.gradleProperty("quickMarkupAbi").orNull
+    val supportedAbi = requestedAbi
+        ?.let { arrayOf(it) }
+        ?: arrayOf("armeabi-v7a", "arm64-v8a", "x86_64")
 
     namespace = "com.t8rin.imagetoolbox"
 
@@ -103,7 +106,7 @@ android {
             reset()
             //noinspection ChromeOsAbiSupport
             include(*supportedAbi)
-            isUniversalApk = true
+            isUniversalApk = requestedAbi == null
         }
     }
 
