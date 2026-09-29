@@ -10,22 +10,61 @@ package com.t8rin.imagetoolbox.app.presentation
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.runtime.Composable
+import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.activity.compose.setContent
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.arkivanov.decompose.retainedComponent
+import com.t8rin.imagetoolbox.core.domain.resource.ResourceManager
+import com.t8rin.imagetoolbox.core.domain.saving.FileController
+import com.t8rin.imagetoolbox.core.domain.saving.FileController.Companion.toMetadataProvider
+import com.t8rin.imagetoolbox.core.domain.saving.KeepAliveService
+import com.t8rin.imagetoolbox.core.settings.domain.SettingsManager
+import com.t8rin.imagetoolbox.core.settings.domain.model.SettingsState
+import com.t8rin.imagetoolbox.core.settings.domain.toSimpleSettingsInteractor
 import com.t8rin.imagetoolbox.core.settings.presentation.model.toUiState
-import com.t8rin.imagetoolbox.core.ui.utils.ComposeActivity
+import com.t8rin.imagetoolbox.core.settings.presentation.provider.LocalSimpleSettingsInteractor
+import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.LocalImagePickerEventEmitter
+import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.rememberImagePickerEventEmitter
 import com.t8rin.imagetoolbox.core.ui.utils.navigation.Screen
 import com.t8rin.imagetoolbox.core.ui.utils.provider.ImageToolboxCompositionLocals
+import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalKeepAliveService
+import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalMetadataProvider
+import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalResourceManager
+import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalWindowSizeClass
 import com.t8rin.imagetoolbox.feature.draw.presentation.DrawContent
 import com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic.DrawComponent
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class AppActivity : ComposeActivity() {
+class AppActivity : AppCompatActivity() {
 
     @Inject
     lateinit var drawComponentFactory: DrawComponent.Factory
+
+    @Inject
+    lateinit var settingsManager: SettingsManager
+
+    @Inject
+    lateinit var fileController: FileController
+
+    @Inject
+    lateinit var keepAliveService: KeepAliveService
+
+    @Inject
+    lateinit var resourceManager: ResourceManager
+
+    private var settingsState by mutableStateOf(SettingsState.Default)
 
     private val component: DrawComponent by lazy {
         retainedComponent { componentContext ->
@@ -38,19 +77,48 @@ class AppActivity : ComposeActivity() {
         }
     }
 
-    override fun handleIntent(intent: Intent) {
-        intent.firstImageUriOrNull()?.let(component::setUri)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        lifecycleScope.launch {
+            settingsManager.settingsState.collectLatest {
+                settingsState = it
+            }
+        }
+
+        if (savedInstanceState == null) {
+            handleIntent(intent)
+        }
+
+        setContent {
+            CompositionLocalProvider(
+                LocalSimpleSettingsInteractor provides settingsManager.toSimpleSettingsInteractor(),
+                LocalMetadataProvider provides fileController.toMetadataProvider(),
+                LocalKeepAliveService provides keepAliveService,
+                LocalImagePickerEventEmitter provides rememberImagePickerEventEmitter(),
+                LocalResourceManager provides resourceManager,
+                LocalWindowSizeClass provides calculateWindowSizeClass(this)
+            ) {
+                ImageToolboxCompositionLocals(
+                    settingsState = settingsState.toUiState(),
+                    currentScreen = Screen.Draw(),
+                    onNavigate = {}
+                ) {
+                    DrawContent(component = component)
+                }
+            }
+        }
     }
 
-    @Composable
-    override fun Content() {
-        ImageToolboxCompositionLocals(
-            settingsState = settingsState.toUiState(),
-            currentScreen = Screen.Draw(),
-            onNavigate = {}
-        ) {
-            DrawContent(component = component)
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        intent.firstImageUriOrNull()?.let(component::setUri)
     }
 }
 
