@@ -8,7 +8,6 @@
 
 package com.t8rin.imagetoolbox.app.presentation.components
 
-import com.t8rin.imagetoolbox.app.presentation.components.functions.attachLogWriter
 import com.t8rin.imagetoolbox.app.presentation.components.functions.injectBaseComponent
 import com.t8rin.imagetoolbox.app.presentation.components.functions.setupFlags
 import com.t8rin.imagetoolbox.app.presentation.components.utils.isMain
@@ -40,7 +39,6 @@ class ImageToolboxApplication : ComposeApplication() {
             setupFlags()
             initAppContext()
             initEmoji()
-            attachLogWriter()
             applyGlobalExceptionHandler()
             injectBaseComponent()
 
