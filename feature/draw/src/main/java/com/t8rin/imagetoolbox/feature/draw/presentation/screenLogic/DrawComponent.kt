@@ -20,6 +20,8 @@ package com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic
 
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.graphics.RectF
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -29,6 +31,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntSize
@@ -151,16 +155,51 @@ class DrawComponent @AssistedInject internal constructor(
     private val _paths = mutableStateOf(listOf<UiPathPaint>())
     val paths: List<UiPathPaint> by _paths
 
-    private val _lastPaths = mutableStateOf(listOf<UiPathPaint>())
-    val lastPaths: List<UiPathPaint> by _lastPaths
+    private val _undoHistory = mutableStateOf<List<List<UiPathPaint>>>(emptyList())
+    private val _redoHistory = mutableStateOf<List<List<UiPathPaint>>>(emptyList())
 
-    private val _undonePaths = mutableStateOf(listOf<UiPathPaint>())
-    val undonePaths: List<UiPathPaint> by _undonePaths
+    val lastPaths: List<UiPathPaint>
+        get() = _undoHistory.value.lastOrNull().orEmpty()
+
+    val undonePaths: List<UiPathPaint>
+        get() = _redoHistory.value.lastOrNull().orEmpty()
+
+    val canUndo: Boolean
+        get() = _undoHistory.value.isNotEmpty()
+
+    val canRedo: Boolean
+        get() = _redoHistory.value.isNotEmpty()
+
+    private var pathTransformStart: List<UiPathPaint>? = null
 
     val renderCache = DrawRenderCache()
 
     val havePaths: Boolean
-        get() = paths.isNotEmpty() || lastPaths.isNotEmpty() || undonePaths.isNotEmpty()
+        get() = paths.isNotEmpty()
+
+    private fun pushUndoSnapshot(snapshot: List<UiPathPaint>) {
+        _undoHistory.value = (_undoHistory.value + listOf(snapshot)).takeLast(MaxPathHistory)
+    }
+
+    private fun pushRedoSnapshot(snapshot: List<UiPathPaint>) {
+        _redoHistory.value = (_redoHistory.value + listOf(snapshot)).takeLast(MaxPathHistory)
+    }
+
+    private fun clearPathHistory() {
+        _undoHistory.value = emptyList()
+        _redoHistory.value = emptyList()
+        pathTransformStart = null
+    }
+
+    private fun commitPaths(newPaths: List<UiPathPaint>) {
+        if (newPaths == paths) return
+
+        pushUndoSnapshot(paths)
+        _redoHistory.value = emptyList()
+        pathTransformStart = null
+        _paths.value = newPaths
+        registerChanges()
+    }
 
     private val _imageFormat = mutableStateOf(ImageFormat.Default)
     val imageFormat by _imageFormat
@@ -266,8 +305,7 @@ class DrawComponent @AssistedInject internal constructor(
         renderCache.clear()
         componentScope.launch {
             _paths.value = listOf()
-            _lastPaths.value = listOf()
-            _undonePaths.value = listOf()
+            clearPathHistory()
             _imageBitmap.value = null
             _isImageLoading.value = true
 
@@ -311,8 +349,7 @@ class DrawComponent @AssistedInject internal constructor(
     fun resetDrawBehavior() {
         renderCache.clear()
         _paths.value = listOf()
-        _lastPaths.value = listOf()
-        _undonePaths.value = listOf()
+        clearPathHistory()
         _imageBitmap.value = null
         _drawBehavior.update {
             DrawBehavior.None
@@ -443,9 +480,7 @@ class DrawComponent @AssistedInject internal constructor(
                 }
             }.onSuccess { redactions ->
                 if (redactions.isNotEmpty()) {
-                    _paths.update { it + redactions }
-                    _undonePaths.value = emptyList()
-                    registerChanges()
+                    commitPaths(paths + redactions)
                 } else {
                     AppToastHost.showToast("沒有找到可自動遮蔽的敏感資訊")
                 }
@@ -467,46 +502,108 @@ class DrawComponent @AssistedInject internal constructor(
 
     fun clearDrawing() {
         if (paths.isNotEmpty()) {
-            _lastPaths.value = paths
-            _paths.value = listOf()
-            _undonePaths.value = listOf()
-            registerChanges()
+            commitPaths(emptyList())
         }
     }
 
     fun undo() {
-        if (paths.isEmpty() && lastPaths.isNotEmpty()) {
-            _paths.value = lastPaths
-            _lastPaths.value = listOf()
-            return
-        }
-        if (paths.isEmpty()) return
-
-        val lastPath = paths.last()
-
-        _paths.update { it - lastPath }
-        _undonePaths.update { it + lastPath }
+        val previous = _undoHistory.value.lastOrNull() ?: return
+        pathTransformStart = null
+        pushRedoSnapshot(paths)
+        _undoHistory.value = _undoHistory.value.dropLast(1)
+        _paths.value = previous
         registerChanges()
     }
 
     fun redo() {
-        if (undonePaths.isEmpty()) return
-
-        val lastPath = undonePaths.last()
-        _paths.update { it + lastPath }
-        _undonePaths.update { it - lastPath }
+        val next = _redoHistory.value.lastOrNull() ?: return
+        pathTransformStart = null
+        pushUndoSnapshot(paths)
+        _redoHistory.value = _redoHistory.value.dropLast(1)
+        _paths.value = next
         registerChanges()
     }
 
     fun addPath(pathPaint: UiPathPaint) {
-        _paths.update { it + pathPaint }
-        _undonePaths.value = listOf()
-        registerChanges()
+        commitPaths(paths + pathPaint)
     }
 
     fun removePath(pathPaint: UiPathPaint) {
-        _paths.update { it - pathPaint }
-        registerChanges()
+        commitPaths(paths - pathPaint)
+    }
+
+    fun removePathAt(index: Int) {
+        if (index !in paths.indices) return
+        commitPaths(paths.filterIndexed { pathIndex, _ -> pathIndex != index })
+    }
+
+    fun beginPathTransform() {
+        if (pathTransformStart == null) {
+            pathTransformStart = paths
+        }
+    }
+
+    fun previewPathTransform(
+        index: Int,
+        pathPaint: UiPathPaint
+    ) {
+        if (index !in paths.indices) return
+        if (pathTransformStart == null) beginPathTransform()
+
+        _paths.value = paths.toMutableList().apply {
+            this[index] = pathPaint
+        }
+    }
+
+    fun finishPathTransform() {
+        val before = pathTransformStart ?: return
+        pathTransformStart = null
+
+        if (before != paths) {
+            pushUndoSnapshot(before)
+            _redoHistory.value = emptyList()
+            registerChanges()
+        }
+    }
+
+    fun cancelPathTransform() {
+        pathTransformStart?.let { _paths.value = it }
+        pathTransformStart = null
+    }
+
+    fun scalePathAt(
+        index: Int,
+        factor: Float
+    ) {
+        val current = paths.getOrNull(index) ?: return
+        val nativePath = android.graphics.Path(current.path.asAndroidPath())
+        val bounds = RectF()
+        nativePath.computeBounds(bounds, true)
+        if (bounds.isEmpty) return
+
+        nativePath.transform(
+            Matrix().apply {
+                setScale(
+                    factor,
+                    factor,
+                    bounds.centerX(),
+                    bounds.centerY()
+                )
+            }
+        )
+
+        val scaled = current.copy(
+            path = nativePath.asComposePath(),
+            strokeWidth = (current.strokeWidth.value * factor)
+                .coerceIn(1f, 100f)
+                .pt
+        )
+
+        commitPaths(
+            paths.toMutableList().apply {
+                this[index] = scaled
+            }
+        )
     }
 
     fun cancelSaving() {
@@ -576,3 +673,5 @@ class DrawComponent @AssistedInject internal constructor(
         ): DrawComponent
     }
 }
+
+private const val MaxPathHistory = 50
