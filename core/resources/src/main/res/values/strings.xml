@@ -5503,4 +5503,15 @@
     <string name="progressive_scaling">Progressive Scaling</string>
     <string name="procedural_dampening">Dampening</string>
     <string name="random_color_dispersion">Random Color Dispersion</string>
+
+    <string name="quick_markup_arrow">Arrow</string>
+    <string name="quick_markup_box">Box</string>
+    <string name="quick_markup_text">Text</string>
+    <string name="quick_markup_highlighter">Highlight</string>
+    <string name="quick_markup_redact">Redact</string>
+    <string name="quick_markup_text_content">Text</string>
+    <string name="quick_markup_smart_redact">Smart redact</string>
+    <string name="quick_markup_share">Share</string>
+    <string name="quick_markup_title">Mark up</string>
+
 </resources>
