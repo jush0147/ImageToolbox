@@ -106,11 +106,7 @@ fun Intent?.handleDeeplinks(
                         val uris =
                             clipData?.clipList() ?: data?.let { listOf(it) } ?: return@runCatching
 
-                        if (isOpenEditInsteadOfPreview) {
-                            onGetUris(uris)
-                        } else {
-                            onNavigate(Screen.ImagePreview(uris))
-                        }
+                        uris.firstOrNull()?.let { onNavigate(Screen.Draw(it)) }
                     }
 
                     Intent.ACTION_SEND -> {
@@ -153,8 +149,10 @@ fun Intent?.handleDeeplinks(
                             clipData?.clipList() ?: data?.let { listOf(it) } ?: return@runCatching
                         if (type?.contains("gif") == true) {
                             onHasExtraDataType(ExtraDataType.Gif)
+                            onGetUris(uris)
+                        } else {
+                            uris.firstOrNull()?.let { onNavigate(Screen.Draw(it)) }
                         }
-                        onGetUris(uris)
                     }
 
                     else -> {
