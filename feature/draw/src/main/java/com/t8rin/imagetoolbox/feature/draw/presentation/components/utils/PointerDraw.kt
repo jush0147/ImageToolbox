@@ -1,6 +1,7 @@
 /*
  * ImageToolbox is an image editor for android
  * Copyright (c) 2026 T8RIN (Malik Mukhametzyanov)
+ * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,6 +123,50 @@ fun Modifier.pointerDrawHandler(
                     onInvalidate()
                 }
                 drawStartedWithOnePointer = false
+            },
+            delayAfterDownInMillis = smartDelayAfterDownInMillis(globalTouchPointersCount.intValue)
+        )
+    }
+} else {
+    this
+}
+
+fun Modifier.pointerPathEditHandler(
+    globalTouchPointersCount: MutableIntState,
+    enabled: Boolean,
+    onDown: (Offset) -> Unit,
+    onMove: (Offset) -> Unit,
+    onUp: (Offset) -> Unit,
+    onCancel: () -> Unit
+) = if (enabled) {
+    this.composed {
+        var editStartedWithOnePointer by remember {
+            mutableStateOf(false)
+        }
+
+        Modifier.pointerMotionEvents(
+            onDown = { pointerInputChange ->
+                editStartedWithOnePointer = globalTouchPointersCount.intValue <= 1
+                if (editStartedWithOnePointer) {
+                    onDown(pointerInputChange.position)
+                    pointerInputChange.consume()
+                }
+            },
+            onMove = { pointerInputChange ->
+                if (editStartedWithOnePointer && globalTouchPointersCount.intValue <= 1) {
+                    onMove(pointerInputChange.position)
+                    pointerInputChange.consume()
+                } else if (editStartedWithOnePointer) {
+                    editStartedWithOnePointer = false
+                    onCancel()
+                }
+            },
+            onUp = { pointerInputChange ->
+                if (editStartedWithOnePointer) {
+                    onUp(pointerInputChange.position)
+                    pointerInputChange.consume()
+                }
+                editStartedWithOnePointer = false
             },
             delayAfterDownInMillis = smartDelayAfterDownInMillis(globalTouchPointersCount.intValue)
         )
