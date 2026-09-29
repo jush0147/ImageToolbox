@@ -1,6 +1,7 @@
 /*
  * ImageToolbox is an image editor for android
  * Copyright (c) 2026 T8RIN (Malik Mukhametzyanov)
+ * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -582,22 +583,39 @@ fun BitmapDrawer(
                                         drawArrowsIfNeeded(drawPath)
                                     },
                                     onBaseDraw = {
-                                        PathMeasure().apply {
+                                        val pathMeasure = PathMeasure().apply {
                                             setPath(drawPath, false)
-                                        }.let {
-                                            if (it.length < 10f && drawMode is DrawMode.Text) {
-                                                addPath = false
+                                        }
+
+                                        if (pathMeasure.length < 10f && drawMode is DrawMode.Text) {
+                                            val start = drawDownPosition.takeOrElse { currentDrawPosition }
+                                            val minimumLength = maxOf(
+                                                24f,
+                                                strokeWidth.toPx(canvasSize)
+                                            )
+                                            val endX = if (start.x + minimumLength <= canvasSize.width) {
+                                                start.x + minimumLength
+                                            } else {
+                                                (start.x - minimumLength).coerceAtLeast(0f)
                                             }
 
-                                            it.getPosition(it.length)
-                                        }.takeOrElse { currentDrawPosition }.let { lastPoint ->
-                                            if (drawPath.isEmpty) {
-                                                drawPath.moveTo(lastPoint.x, lastPoint.y)
+                                            drawPath = Path().apply {
+                                                moveTo(start.x, start.y)
+                                                lineTo(endX, start.y)
                                             }
-                                            drawPath.lineTo(
-                                                currentDrawPosition.x,
-                                                currentDrawPosition.y
-                                            )
+                                        } else {
+                                            pathMeasure
+                                                .getPosition(pathMeasure.length)
+                                                .takeOrElse { currentDrawPosition }
+                                                .let { lastPoint ->
+                                                    if (drawPath.isEmpty) {
+                                                        drawPath.moveTo(lastPoint.x, lastPoint.y)
+                                                    }
+                                                    drawPath.lineTo(
+                                                        currentDrawPosition.x,
+                                                        currentDrawPosition.y
+                                                    )
+                                                }
                                         }
                                     },
                                     onFloodFill = { tolerance ->
