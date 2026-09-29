@@ -81,7 +81,6 @@ import com.t8rin.imagetoolbox.core.ui.widget.utils.AutoContentBasedColors
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawBehavior
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.BitmapDrawer
-import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentNoDataControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentSecondaryControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupTool
@@ -374,12 +373,7 @@ fun DrawContent(
             )
         },
         enableNoDataScroll = false,
-        noDataControls = {
-            DrawContentNoDataControls(
-                component = component,
-                onPickImage = pickImage
-            )
-        },
+        noDataControls = {},
         canShowScreenData = component.drawBehavior !is DrawBehavior.None,
         showActionsInTopAppBar = false,
         mainContentWeight = 0.78f
