@@ -5514,4 +5514,8 @@
     <string name="quick_markup_share">Share</string>
     <string name="quick_markup_title">Mark up</string>
 
+
+    <string name="quick_markup_crop">Crop</string>
+    <string name="quick_markup_apply_crop">Apply crop</string>
+
 </resources>
