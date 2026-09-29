@@ -5527,4 +5527,7 @@
     <string name="quick_markup_width_medium">Medium</string>
     <string name="quick_markup_width_thick">Thick</string>
 
+
+    <string name="quick_markup_number">Number</string>
+
 </resources>
