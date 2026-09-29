@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.IntSize
 import androidx.core.net.toUri
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.childContext
@@ -375,6 +376,34 @@ class DrawComponent @AssistedInject internal constructor(
                     ),
                     onComplete = AppToastHost::showConfetti
                 )
+            }
+            _isSaving.value = false
+        }
+    }
+
+    fun prepareCrop(
+        onReady: (Bitmap, Uri, IntSize) -> Unit
+    ) {
+        savingJob = trackProgress {
+            _isSaving.value = true
+            getDrawingBitmap()?.let { image ->
+                val imageInfo = ImageInfo(
+                    originalUri = _uri.value.toString(),
+                    imageFormat = imageFormat,
+                    width = image.width,
+                    height = image.height
+                )
+                shareProvider.cacheImage(
+                    image = image,
+                    imageInfo = imageInfo
+                )?.let { cachedUri ->
+                    val preview = imageScaler.scaleUntilCanShow(image) ?: image
+                    onReady(
+                        preview,
+                        cachedUri.toUri(),
+                        IntSize(image.width, image.height)
+                    )
+                }
             }
             _isSaving.value = false
         }
