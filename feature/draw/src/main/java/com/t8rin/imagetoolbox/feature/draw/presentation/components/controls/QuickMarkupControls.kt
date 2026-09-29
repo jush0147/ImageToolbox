@@ -31,6 +31,7 @@ import com.t8rin.imagetoolbox.core.domain.model.Pt
 import com.t8rin.imagetoolbox.core.domain.model.pt
 import com.t8rin.imagetoolbox.core.resources.Icons
 import com.t8rin.imagetoolbox.core.resources.R
+import com.t8rin.imagetoolbox.core.resources.icons.Counter
 import com.t8rin.imagetoolbox.core.resources.icons.CropSmall
 import com.t8rin.imagetoolbox.core.resources.icons.Highlighter
 import com.t8rin.imagetoolbox.core.resources.icons.LineArrow
@@ -46,6 +47,7 @@ internal enum class QuickMarkupTool {
     Arrow,
     Box,
     Text,
+    Number,
     Highlighter,
     Redact
 }
@@ -57,6 +59,7 @@ internal fun QuickMarkupControls(
     onToolChange: (QuickMarkupTool) -> Unit,
     textValue: String,
     onTextValueChange: (String) -> Unit,
+    numberValue: Int,
     drawColor: Color,
     strokeWidth: Pt,
     onDrawColorChange: (Color) -> Unit,
@@ -92,6 +95,14 @@ internal fun QuickMarkupControls(
                 onAlphaChange(1f)
             }
 
+            QuickMarkupTool.Number -> {
+                component.updateDrawMode(DrawMode.Text(text = circledNumber(numberValue)))
+                component.updateDrawPathMode(DrawPathMode.Line)
+                onDrawColorChange(Color.Red)
+                onStrokeWidthChange(28.pt)
+                onAlphaChange(1f)
+            }
+
             QuickMarkupTool.Highlighter -> {
                 component.updateDrawMode(DrawMode.Highlighter)
                 component.updateDrawPathMode(DrawPathMode.Free)
@@ -117,6 +128,12 @@ internal fun QuickMarkupControls(
     LaunchedEffect(textValue, tool) {
         if (tool == QuickMarkupTool.Text) {
             component.updateDrawMode(DrawMode.Text(text = textValue))
+        }
+    }
+
+    LaunchedEffect(numberValue, tool) {
+        if (tool == QuickMarkupTool.Number) {
+            component.updateDrawMode(DrawMode.Text(text = circledNumber(numberValue)))
         }
     }
 
@@ -155,6 +172,12 @@ internal fun QuickMarkupControls(
                 label = stringResource(R.string.quick_markup_text),
                 icon = Icons.Rounded.TextFormat,
                 onClick = { onToolChange(QuickMarkupTool.Text) }
+            )
+            QuickToolChip(
+                selected = tool == QuickMarkupTool.Number,
+                label = stringResource(R.string.quick_markup_number),
+                icon = Icons.Outlined.Counter,
+                onClick = { onToolChange(QuickMarkupTool.Number) }
             )
             QuickToolChip(
                 selected = tool == QuickMarkupTool.Highlighter,
@@ -244,13 +267,21 @@ internal fun QuickMarkupControls(
 }
 
 private fun widthOptions(tool: QuickMarkupTool): List<Pt> = when (tool) {
-    QuickMarkupTool.Text -> listOf(20.pt, 28.pt, 40.pt)
+    QuickMarkupTool.Text,
+    QuickMarkupTool.Number -> listOf(20.pt, 28.pt, 40.pt)
     QuickMarkupTool.Highlighter -> listOf(10.pt, 18.pt, 30.pt)
     QuickMarkupTool.Arrow,
     QuickMarkupTool.Box -> listOf(2.pt, 4.pt, 8.pt)
 
     QuickMarkupTool.Redact -> listOf(1.pt, 1.pt, 1.pt)
 }
+
+private fun circledNumber(value: Int): String = when (value) {
+    in 1..20 -> CIRCLED_NUMBERS[value - 1].toString()
+    else -> value.toString()
+}
+
+private const val CIRCLED_NUMBERS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
 
 @Composable
 private fun QuickToolChip(
