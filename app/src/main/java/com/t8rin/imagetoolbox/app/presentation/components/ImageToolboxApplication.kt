@@ -11,9 +11,7 @@ package com.t8rin.imagetoolbox.app.presentation.components
 import com.t8rin.imagetoolbox.app.presentation.components.functions.injectBaseComponent
 import com.t8rin.imagetoolbox.app.presentation.components.functions.setupFlags
 import com.t8rin.imagetoolbox.app.presentation.components.utils.isMain
-import com.t8rin.imagetoolbox.core.crash.presentation.components.applyGlobalExceptionHandler
 import com.t8rin.imagetoolbox.core.domain.saving.KeepAliveService
-import com.t8rin.imagetoolbox.core.resources.emoji.Emoji.initEmoji
 import com.t8rin.imagetoolbox.core.ui.utils.ComposeApplication
 import com.t8rin.imagetoolbox.core.utils.initAppContext
 import dagger.hilt.android.HiltAndroidApp
@@ -38,8 +36,6 @@ class ImageToolboxApplication : ComposeApplication() {
         if (isMain()) {
             setupFlags()
             initAppContext()
-            initEmoji()
-            applyGlobalExceptionHandler()
             injectBaseComponent()
 
             isSetupCompleted = true
