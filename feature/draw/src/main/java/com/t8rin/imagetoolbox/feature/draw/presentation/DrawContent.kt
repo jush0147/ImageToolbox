@@ -179,6 +179,25 @@ fun DrawContent(
     var quickCropData by remember(component.drawBehavior) {
         mutableStateOf<QuickCropData?>(null)
     }
+    var selectedPathIndex by rememberSaveable(component.drawBehavior) {
+        mutableStateOf<Int?>(null)
+    }
+
+    LaunchedEffect(
+        quickMarkupTool,
+        component.paths.size
+    ) {
+        val selectionInvalid = selectedPathIndex?.let {
+            it !in component.paths.indices
+        } == true
+
+        if (
+            quickMarkupTool != QuickMarkupTool.Adjust ||
+            selectionInvalid
+        ) {
+            selectedPathIndex = null
+        }
+    }
 
     val drawMode = component.drawMode
 
@@ -331,7 +350,16 @@ fun DrawContent(
                     drawLineStyle = drawLineStyle,
                     helperGridParams = component.helperGridParams,
                     showLineAngle = showLineAngle,
-                    onRemovePath = component::removePath
+                    onRemovePath = component::removePath,
+                    pathEditEnabled = quickMarkupTool == QuickMarkupTool.Adjust,
+                    selectedPathIndex = selectedPathIndex,
+                    onSelectedPathIndexChange = {
+                        selectedPathIndex = it
+                    },
+                    onPathTransformStart = component::beginPathTransform,
+                    onPathTransformPreview = component::previewPathTransform,
+                    onPathTransformFinish = component::finishPathTransform,
+                    onPathTransformCancel = component::cancelPathTransform
                 )
             }
         },
@@ -356,6 +384,21 @@ fun DrawContent(
                             imageSize = size
                         )
                     }
+                },
+                hasSelectedPath = selectedPathIndex != null,
+                onScaleSelectedDown = {
+                    selectedPathIndex?.let {
+                        component.scalePathAt(it, 0.8f)
+                    }
+                },
+                onScaleSelectedUp = {
+                    selectedPathIndex?.let {
+                        component.scalePathAt(it, 1.25f)
+                    }
+                },
+                onDeleteSelected = {
+                    selectedPathIndex?.let(component::removePathAt)
+                    selectedPathIndex = null
                 }
             )
         },
