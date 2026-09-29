@@ -17,7 +17,6 @@
 
 import com.t8rin.imagetoolbox.configureDetekt
 import com.t8rin.imagetoolbox.core
-import com.t8rin.imagetoolbox.crash
 import com.t8rin.imagetoolbox.data
 import com.t8rin.imagetoolbox.di
 import com.t8rin.imagetoolbox.domain
@@ -44,7 +43,6 @@ class ImageToolboxLibraryFeaturePlugin : Plugin<Project> {
                 implementation(projects.core.resources)
                 implementation(projects.core.settings)
                 implementation(projects.core.di)
-                implementation(projects.core.crash)
             }
         }
     }
