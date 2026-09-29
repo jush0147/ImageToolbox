@@ -22,7 +22,10 @@ package com.t8rin.imagetoolbox.feature.draw.presentation.components
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.PorterDuff
+import android.graphics.RectF
+import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
@@ -38,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -49,12 +53,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import com.t8rin.imagetoolbox.core.data.image.utils.drawBackground
 import com.t8rin.imagetoolbox.core.domain.model.GradientFill
@@ -138,6 +146,13 @@ fun BitmapDrawer(
     helperGridParams: HelperGridParams = remember { HelperGridParams() },
     showLineAngle: Boolean = false,
     onRemovePath: (UiPathPaint) -> Unit = {},
+    pathEditEnabled: Boolean = false,
+    selectedPathIndex: Int? = null,
+    onSelectedPathIndexChange: (Int?) -> Unit = {},
+    onPathTransformStart: () -> Unit = {},
+    onPathTransformPreview: (Int, UiPathPaint) -> Unit = { _, _ -> },
+    onPathTransformFinish: () -> Unit = {},
+    onPathTransformCancel: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -246,6 +261,66 @@ fun BitmapDrawer(
                         height = canvas.nativeCanvas.height
                     )
                 }
+            }
+
+            var pathEditStart by remember { mutableStateOf(Offset.Unspecified) }
+            var pathEditIndex by remember { mutableStateOf<Int?>(null) }
+            var pathEditOriginal by remember { mutableStateOf<UiPathPaint?>(null) }
+
+            val clearPathEditGesture = {
+                pathEditStart = Offset.Unspecified
+                pathEditIndex = null
+                pathEditOriginal = null
+            }
+
+            val onPathEditDown: (Offset) -> Unit = { position ->
+                val index = paths.indices.reversed().firstOrNull { pathIndex ->
+                    paths[pathIndex]
+                        .selectionBounds(canvasSize)
+                        .contains(position)
+                }
+
+                onSelectedPathIndexChange(index)
+                pathEditIndex = index
+                pathEditOriginal = index?.let(paths::getOrNull)
+                pathEditStart = position
+
+                if (index != null) {
+                    onPathTransformStart()
+                }
+            }
+
+            val previewPathMove: (Offset) -> Unit = { position ->
+                val index = pathEditIndex
+                val original = pathEditOriginal
+                if (
+                    index != null &&
+                    original != null &&
+                    pathEditStart.isSpecified
+                ) {
+                    onPathTransformPreview(
+                        index,
+                        original.translateForCanvas(
+                            delta = position - pathEditStart,
+                            targetSize = canvasSize
+                        )
+                    )
+                }
+            }
+
+            val onPathEditUp: (Offset) -> Unit = { position ->
+                if (pathEditIndex != null && pathEditOriginal != null) {
+                    previewPathMove(position)
+                    onPathTransformFinish()
+                }
+                clearPathEditGesture()
+            }
+
+            val onPathEditCancel = {
+                if (pathEditIndex != null && pathEditOriginal != null) {
+                    onPathTransformCancel()
+                }
+                clearPathEditGesture()
             }
 
             val drawPaint by rememberPaint(
@@ -871,11 +946,43 @@ fun BitmapDrawer(
                 onInvalidate = { invalidations++ },
                 onUpdateCurrentDrawPosition = { currentDrawPosition = it },
                 onUpdateDrawDownPosition = { drawDownPosition = it },
-                drawEnabled = !panEnabled && !isWarpInputLocked && pendingCommit == null && drawImageBitmap != null &&
+                drawEnabled = !pathEditEnabled && !panEnabled && !isWarpInputLocked && pendingCommit == null && drawImageBitmap != null &&
                         (renderedPaths == paths || isEraserOn || (drawMode !is DrawMode.PathEffect && drawMode !is DrawMode.SpotHeal && drawMode !is DrawMode.Warp)),
+                pathEditEnabled = pathEditEnabled && pendingCommit == null && drawImageBitmap != null,
+                onPathEditDown = onPathEditDown,
+                onPathEditMove = previewPathMove,
+                onPathEditUp = onPathEditUp,
+                onPathEditCancel = onPathEditCancel,
                 helperGridParams = helperGridParams,
                 drawBitmapBorder = settingsState.drawBitmapBorder
             )
+
+            if (pathEditEnabled) {
+                selectedPathIndex
+                    ?.let(paths::getOrNull)
+                    ?.selectionBounds(canvasSize)
+                    ?.let { bounds ->
+                        val selectionColor = MaterialTheme.colorScheme.primary
+                        ComposeCanvas(
+                            modifier = Modifier.matchParentSize()
+                        ) {
+                            drawRect(
+                                color = selectionColor,
+                                topLeft = bounds.topLeft,
+                                size = bounds.size,
+                                style = Stroke(
+                                    width = 2.dp.toPx(),
+                                    pathEffect = PathEffect.dashPathEffect(
+                                        floatArrayOf(
+                                            8.dp.toPx(),
+                                            6.dp.toPx()
+                                        )
+                                    )
+                                )
+                            )
+                        }
+                    }
+            }
 
             if (showLineAngle && drawPathMode.canShowLineAngle() && drawDownPosition.isSpecified && currentDrawPosition.isSpecified) {
                 LineAngleIndicator(
@@ -896,4 +1003,74 @@ private data class DrawPreviewSnapshot(
 ) {
     fun isPrefixOf(history: List<UiPathPaint>): Boolean =
         history.size >= paths.size && history.subList(0, paths.size) == paths
+}
+
+private fun UiPathPaint.pathForCanvas(
+    targetSize: IntegerSize
+): android.graphics.Path {
+    val sourceWidth = canvasSize.width.coerceAtLeast(1)
+    val sourceHeight = canvasSize.height.coerceAtLeast(1)
+    val scaleX = targetSize.width.toFloat() / sourceWidth
+    val scaleY = targetSize.height.toFloat() / sourceHeight
+
+    return android.graphics.Path(path.asAndroidPath()).apply {
+        transform(
+            Matrix().apply {
+                setScale(scaleX, scaleY)
+            }
+        )
+    }
+}
+
+private fun UiPathPaint.selectionBounds(
+    targetSize: IntegerSize
+): androidx.compose.ui.geometry.Rect {
+    val nativePath = pathForCanvas(targetSize)
+    val bounds = RectF()
+    nativePath.computeBounds(bounds, true)
+
+    val scaledStroke = strokeWidth.toPx(targetSize).coerceAtLeast(1f)
+    if (drawMode is DrawMode.Text) {
+        val textLength = drawMode.text.length.coerceAtLeast(1)
+        bounds.right = maxOf(
+            bounds.right,
+            bounds.left + scaledStroke * textLength * 0.65f
+        )
+        bounds.top -= scaledStroke
+        bounds.bottom = maxOf(
+            bounds.bottom,
+            bounds.top + scaledStroke * 1.35f
+        )
+    }
+
+    val padding = maxOf(
+        12f,
+        scaledStroke * 1.5f
+    )
+
+    return androidx.compose.ui.geometry.Rect(
+        left = bounds.left - padding,
+        top = bounds.top - padding,
+        right = bounds.right + padding,
+        bottom = bounds.bottom + padding
+    )
+}
+
+private fun UiPathPaint.translateForCanvas(
+    delta: Offset,
+    targetSize: IntegerSize
+): UiPathPaint {
+    val targetWidth = targetSize.width.coerceAtLeast(1)
+    val targetHeight = targetSize.height.coerceAtLeast(1)
+
+    val sourceDeltaX = delta.x * canvasSize.width / targetWidth
+    val sourceDeltaY = delta.y * canvasSize.height / targetHeight
+
+    val movedPath = android.graphics.Path(path.asAndroidPath()).apply {
+        offset(sourceDeltaX, sourceDeltaY)
+    }
+
+    return copy(
+        path = movedPath.asComposePath()
+    )
 }
