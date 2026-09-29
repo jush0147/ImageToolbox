@@ -71,7 +71,6 @@ import com.t8rin.imagetoolbox.core.ui.widget.dialogs.OneTimeImagePickingDialog
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.OneTimeSaveLocationSelectionDialog
 import com.t8rin.imagetoolbox.core.ui.widget.enhanced.EnhancedIconButton
 import com.t8rin.imagetoolbox.core.ui.widget.other.DrawLockScreenOrientation
-import com.t8rin.imagetoolbox.core.ui.widget.other.TopAppBarEmoji
 import com.t8rin.imagetoolbox.core.ui.widget.saver.ColorSaver
 import com.t8rin.imagetoolbox.core.ui.widget.saver.GradientGeometrySaver
 import com.t8rin.imagetoolbox.core.ui.widget.saver.GradientPaletteSaver
@@ -238,8 +237,7 @@ fun DrawContent(
             secondaryControls()
         },
         topAppBarPersistentActions = { scaffoldState ->
-            if (component.drawBehavior == DrawBehavior.None) TopAppBarEmoji()
-            else {
+            if (component.drawBehavior != DrawBehavior.None) {
                 if (isPortrait) {
                     EnhancedIconButton(
                         onClick = {
