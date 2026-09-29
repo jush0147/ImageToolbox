@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -172,6 +173,9 @@ fun DrawContent(
     var quickMarkupText by rememberSaveable(component.drawBehavior) {
         mutableStateOf("文字")
     }
+    var quickMarkupNumber by rememberSaveable(component.drawBehavior) {
+        mutableIntStateOf(1)
+    }
     var quickCropData by remember(component.drawBehavior) {
         mutableStateOf<QuickCropData?>(null)
     }
@@ -301,7 +305,12 @@ fun DrawContent(
                     gradientGeometry = fillGradientGeometry,
                     gradientLength = gradientLength,
                     isGradientMirrored = isGradientMirrored,
-                    onAddPath = component::addPath,
+                    onAddPath = { path ->
+                        component.addPath(path)
+                        if (quickMarkupTool == QuickMarkupTool.Number) {
+                            quickMarkupNumber++
+                        }
+                    },
                     isEraserOn = isEraserOn,
                     drawMode = drawMode,
                     modifier = Modifier
@@ -333,6 +342,7 @@ fun DrawContent(
                 onToolChange = { quickMarkupTool = it },
                 textValue = quickMarkupText,
                 onTextValueChange = { quickMarkupText = it },
+                numberValue = quickMarkupNumber,
                 drawColor = drawColor,
                 strokeWidth = strokeWidth,
                 onDrawColorChange = { drawColor = it },
