@@ -33,10 +33,14 @@ import com.t8rin.imagetoolbox.core.resources.Icons
 import com.t8rin.imagetoolbox.core.resources.R
 import com.t8rin.imagetoolbox.core.resources.icons.Counter
 import com.t8rin.imagetoolbox.core.resources.icons.CropSmall
+import com.t8rin.imagetoolbox.core.resources.icons.Delete
 import com.t8rin.imagetoolbox.core.resources.icons.Highlighter
 import com.t8rin.imagetoolbox.core.resources.icons.LineArrow
+import com.t8rin.imagetoolbox.core.resources.icons.PhotoSizeSelectLarge
+import com.t8rin.imagetoolbox.core.resources.icons.PhotoSizeSelectSmall
 import com.t8rin.imagetoolbox.core.resources.icons.Rectangle
 import com.t8rin.imagetoolbox.core.resources.icons.TextFormat
+import com.t8rin.imagetoolbox.core.resources.icons.TouchApp
 import com.t8rin.imagetoolbox.core.resources.icons.VisibilityOff
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawLineStyle
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
@@ -44,6 +48,7 @@ import com.t8rin.imagetoolbox.feature.draw.domain.DrawPathMode
 import com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic.DrawComponent
 
 internal enum class QuickMarkupTool {
+    Adjust,
     Arrow,
     Box,
     Text,
@@ -65,12 +70,18 @@ internal fun QuickMarkupControls(
     onDrawColorChange: (Color) -> Unit,
     onStrokeWidthChange: (Pt) -> Unit,
     onAlphaChange: (Float) -> Unit,
-    onCropClick: () -> Unit
+    onCropClick: () -> Unit,
+    hasSelectedPath: Boolean,
+    onScaleSelectedDown: () -> Unit,
+    onScaleSelectedUp: () -> Unit,
+    onDeleteSelected: () -> Unit
 ) {
     fun applyTool(selected: QuickMarkupTool) {
         component.updateDrawLineStyle(DrawLineStyle.None)
 
         when (selected) {
+            QuickMarkupTool.Adjust -> Unit
+
             QuickMarkupTool.Arrow -> {
                 component.updateDrawMode(DrawMode.Pen)
                 component.updateDrawPathMode(DrawPathMode.LinePointingArrow())
@@ -156,6 +167,12 @@ internal fun QuickMarkupControls(
                 onClick = onCropClick
             )
             QuickToolChip(
+                selected = tool == QuickMarkupTool.Adjust,
+                label = stringResource(R.string.quick_markup_adjust),
+                icon = Icons.Rounded.TouchApp,
+                onClick = { onToolChange(QuickMarkupTool.Adjust) }
+            )
+            QuickToolChip(
                 selected = tool == QuickMarkupTool.Arrow,
                 label = stringResource(R.string.quick_markup_arrow),
                 icon = Icons.Rounded.LineArrow,
@@ -205,7 +222,42 @@ internal fun QuickMarkupControls(
             )
         }
 
-        AnimatedVisibility(visible = tool != QuickMarkupTool.Redact) {
+        AnimatedVisibility(visible = tool == QuickMarkupTool.Adjust) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QuickToolChip(
+                    selected = false,
+                    label = stringResource(R.string.quick_markup_smaller),
+                    icon = Icons.Outlined.PhotoSizeSelectSmall,
+                    onClick = onScaleSelectedDown,
+                    enabled = hasSelectedPath,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickToolChip(
+                    selected = false,
+                    label = stringResource(R.string.quick_markup_larger),
+                    icon = Icons.Outlined.PhotoSizeSelectLarge,
+                    onClick = onScaleSelectedUp,
+                    enabled = hasSelectedPath,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickToolChip(
+                    selected = false,
+                    label = stringResource(R.string.delete),
+                    icon = Icons.Rounded.Delete,
+                    onClick = onDeleteSelected,
+                    enabled = hasSelectedPath,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = tool != QuickMarkupTool.Redact &&
+                    tool != QuickMarkupTool.Adjust
+        ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -267,6 +319,7 @@ internal fun QuickMarkupControls(
 }
 
 private fun widthOptions(tool: QuickMarkupTool): List<Pt> = when (tool) {
+    QuickMarkupTool.Adjust -> listOf(1.pt, 1.pt, 1.pt)
     QuickMarkupTool.Text,
     QuickMarkupTool.Number -> listOf(20.pt, 28.pt, 40.pt)
     QuickMarkupTool.Highlighter -> listOf(10.pt, 18.pt, 30.pt)
@@ -288,11 +341,15 @@ private fun QuickToolChip(
     selected: Boolean,
     label: String,
     icon: ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
         label = { Text(label) },
         leadingIcon = {
             Icon(
