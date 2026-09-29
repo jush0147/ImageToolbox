@@ -5479,4 +5479,8 @@
     <string name="quick_markup_share">分享</string>
     <string name="quick_markup_title">畫重點</string>
 
+
+    <string name="quick_markup_crop">裁切</string>
+    <string name="quick_markup_apply_crop">套用裁切</string>
+
 </resources>
