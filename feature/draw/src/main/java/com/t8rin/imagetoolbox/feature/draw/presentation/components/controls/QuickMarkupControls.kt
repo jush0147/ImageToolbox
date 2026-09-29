@@ -57,6 +57,8 @@ internal fun QuickMarkupControls(
     onToolChange: (QuickMarkupTool) -> Unit,
     textValue: String,
     onTextValueChange: (String) -> Unit,
+    drawColor: Color,
+    strokeWidth: Pt,
     onDrawColorChange: (Color) -> Unit,
     onStrokeWidthChange: (Pt) -> Unit,
     onAlphaChange: (Float) -> Unit,
@@ -179,7 +181,75 @@ internal fun QuickMarkupControls(
                 }
             )
         }
+
+        AnimatedVisibility(visible = tool != QuickMarkupTool.Redact) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ColorChip(
+                        selected = drawColor == Color.Red,
+                        label = stringResource(R.string.quick_markup_color_red),
+                        onClick = { onDrawColorChange(Color.Red) }
+                    )
+                    ColorChip(
+                        selected = drawColor == Color.Yellow,
+                        label = stringResource(R.string.quick_markup_color_yellow),
+                        onClick = { onDrawColorChange(Color.Yellow) }
+                    )
+                    ColorChip(
+                        selected = drawColor == Color.Black,
+                        label = stringResource(R.string.quick_markup_color_black),
+                        onClick = { onDrawColorChange(Color.Black) }
+                    )
+                    ColorChip(
+                        selected = drawColor == Color.White,
+                        label = stringResource(R.string.quick_markup_color_white),
+                        onClick = { onDrawColorChange(Color.White) }
+                    )
+                }
+
+                val widths = widthOptions(tool)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    WidthChip(
+                        selected = strokeWidth == widths[0],
+                        label = stringResource(R.string.quick_markup_width_thin),
+                        onClick = { onStrokeWidthChange(widths[0]) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    WidthChip(
+                        selected = strokeWidth == widths[1],
+                        label = stringResource(R.string.quick_markup_width_medium),
+                        onClick = { onStrokeWidthChange(widths[1]) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    WidthChip(
+                        selected = strokeWidth == widths[2],
+                        label = stringResource(R.string.quick_markup_width_thick),
+                        onClick = { onStrokeWidthChange(widths[2]) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
+}
+
+private fun widthOptions(tool: QuickMarkupTool): List<Pt> = when (tool) {
+    QuickMarkupTool.Text -> listOf(20.pt, 28.pt, 40.pt)
+    QuickMarkupTool.Highlighter -> listOf(10.pt, 18.pt, 30.pt)
+    QuickMarkupTool.Arrow,
+    QuickMarkupTool.Box -> listOf(2.pt, 4.pt, 8.pt)
+
+    QuickMarkupTool.Redact -> listOf(1.pt, 1.pt, 1.pt)
 }
 
 @Composable
@@ -199,5 +269,33 @@ private fun QuickToolChip(
                 contentDescription = null
             )
         }
+    )
+}
+
+@Composable
+private fun ColorChip(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) }
+    )
+}
+
+@Composable
+private fun WidthChip(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        modifier = modifier
     )
 }
