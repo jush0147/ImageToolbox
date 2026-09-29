@@ -5495,4 +5495,9 @@
 
     <string name="quick_markup_number">編號</string>
 
+
+    <string name="quick_markup_adjust">調整</string>
+    <string name="quick_markup_smaller">縮小</string>
+    <string name="quick_markup_larger">放大</string>
+
 </resources>
