@@ -54,6 +54,7 @@ import com.t8rin.imagetoolbox.core.domain.model.coerceIn
 import com.t8rin.imagetoolbox.core.domain.model.pt
 import com.t8rin.imagetoolbox.core.resources.Icons
 import com.t8rin.imagetoolbox.core.resources.R
+import com.t8rin.imagetoolbox.core.resources.icons.AutoFixHigh
 import com.t8rin.imagetoolbox.core.resources.icons.Delete
 import com.t8rin.imagetoolbox.core.resources.icons.Tune
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.LocalSettingsState
@@ -262,6 +263,15 @@ fun DrawContent(
                 var editSheetData by remember {
                     mutableStateOf(listOf<Uri>())
                 }
+                EnhancedIconButton(
+                    onClick = component::smartRedact,
+                    enabled = component.drawBehavior !is DrawBehavior.None && !component.isSmartRedacting
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.AutoFixHigh,
+                        contentDescription = "智慧遮蔽"
+                    )
+                }
                 ShareButton(
                     enabled = component.drawBehavior !is DrawBehavior.None,
                     onShare = component::shareBitmap,
@@ -415,7 +425,7 @@ fun DrawContent(
     )
 
     LoadingDialog(
-        visible = component.isSaving || component.isImageLoading,
+        visible = component.isSaving || component.isImageLoading || component.isSmartRedacting,
         onCancelLoading = component::cancelSaving,
         canCancel = component.isSaving
     )
