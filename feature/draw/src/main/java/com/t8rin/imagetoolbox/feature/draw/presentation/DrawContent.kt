@@ -268,7 +268,7 @@ fun DrawContent(
                     enabled = component.drawBehavior !is DrawBehavior.None && !component.isSmartRedacting
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.AutoFixHigh,
+                        imageVector = Icons.Outlined.AutoFixHigh,
                         contentDescription = "智慧遮蔽"
                     )
                 }
