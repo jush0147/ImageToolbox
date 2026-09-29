@@ -24,8 +24,10 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
@@ -40,6 +42,8 @@ import com.t8rin.imagetoolbox.core.domain.image.ImageTransformer
 import com.t8rin.imagetoolbox.core.domain.image.model.ImageFormat
 import com.t8rin.imagetoolbox.core.domain.image.model.ImageInfo
 import com.t8rin.imagetoolbox.core.domain.model.GradientFill
+import com.t8rin.imagetoolbox.core.domain.model.IntegerSize
+import com.t8rin.imagetoolbox.core.domain.model.pt
 import com.t8rin.imagetoolbox.core.domain.saving.FileController
 import com.t8rin.imagetoolbox.core.domain.saving.model.ImageSaveTarget
 import com.t8rin.imagetoolbox.core.domain.utils.smartJob
@@ -61,6 +65,7 @@ import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawOnBackgroundParams
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawPathMode
 import com.t8rin.imagetoolbox.feature.draw.domain.ImageDrawApplier
+import com.t8rin.imagetoolbox.feature.draw.data.SmartRedactionEngine
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.UiPathPaint
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.utils.DrawRenderCache
 import dagger.assisted.Assisted
@@ -83,6 +88,7 @@ class DrawComponent @AssistedInject internal constructor(
     private val shareProvider: ImageShareProvider<Bitmap>,
     private val filterProvider: FilterProvider<Bitmap>,
     private val settingsProvider: SettingsProvider,
+    private val smartRedactionEngine: SmartRedactionEngine,
     dispatchersHolder: DispatchersHolder,
     addFiltersSheetComponentFactory: AddFiltersSheetComponent.Factory,
     filterTemplateCreationSheetComponentFactory: FilterTemplateCreationSheetComponent.Factory
@@ -159,6 +165,9 @@ class DrawComponent @AssistedInject internal constructor(
 
     private val _isSaving: MutableState<Boolean> = mutableStateOf(false)
     val isSaving: Boolean by _isSaving
+
+    private val _isSmartRedacting: MutableState<Boolean> = mutableStateOf(false)
+    val isSmartRedacting: Boolean by _isSmartRedacting
 
     private val _saveExif: MutableState<Boolean> = mutableStateOf(false)
     val saveExif: Boolean by _saveExif
@@ -367,6 +376,51 @@ class DrawComponent @AssistedInject internal constructor(
                 )
             }
             _isSaving.value = false
+        }
+    }
+
+    fun smartRedact() {
+        val preview = imageBitmap ?: return
+
+        componentScope.launch {
+            _isSmartRedacting.value = true
+            runCatching {
+                val bitmap = preview.asAndroidBitmap()
+                val canvasSize = IntegerSize(bitmap.width, bitmap.height)
+                val padding = (minOf(bitmap.width, bitmap.height) * 0.006f).coerceAtLeast(2f)
+
+                smartRedactionEngine.detect(bitmap).map { region ->
+                    val bounds = region.bounds
+                    UiPathPaint(
+                        path = Path().apply {
+                            addRect(
+                                Rect(
+                                    left = (bounds.left - padding).coerceAtLeast(0f),
+                                    top = (bounds.top - padding).coerceAtLeast(0f),
+                                    right = (bounds.right + padding).coerceAtMost(bitmap.width.toFloat()),
+                                    bottom = (bounds.bottom + padding).coerceAtMost(bitmap.height.toFloat())
+                                )
+                            )
+                        },
+                        strokeWidth = 1.pt,
+                        brushSoftness = 0.pt,
+                        drawColor = Color.Black,
+                        isErasing = false,
+                        drawMode = DrawMode.Pen,
+                        canvasSize = canvasSize,
+                        drawPathMode = DrawPathMode.Rect()
+                    )
+                }
+            }.onSuccess { redactions ->
+                if (redactions.isNotEmpty()) {
+                    _paths.update { it + redactions }
+                    _undonePaths.value = emptyList()
+                    registerChanges()
+                } else {
+                    AppToastHost.showToast("沒有找到可自動遮蔽的敏感資訊")
+                }
+            }.onFailure(AppToastHost::showFailureToast)
+            _isSmartRedacting.value = false
         }
     }
 
