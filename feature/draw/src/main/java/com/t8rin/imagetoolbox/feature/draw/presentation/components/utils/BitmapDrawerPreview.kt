@@ -1,6 +1,7 @@
 /*
  * ImageToolbox is an image editor for android
  * Copyright (c) 2026 T8RIN (Malik Mukhametzyanov)
+ * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +45,11 @@ fun BoxScope.BitmapDrawerPreview(
     onUpdateCurrentDrawPosition: (Offset) -> Unit,
     onUpdateDrawDownPosition: (Offset) -> Unit,
     drawEnabled: Boolean,
+    pathEditEnabled: Boolean = false,
+    onPathEditDown: (Offset) -> Unit = {},
+    onPathEditMove: (Offset) -> Unit = {},
+    onPathEditUp: (Offset) -> Unit = {},
+    onPathEditCancel: () -> Unit = {},
     helperGridParams: HelperGridParams,
     drawBitmapBorder: Boolean,
     beforeHelperGridModifier: Modifier = Modifier,
@@ -59,6 +65,14 @@ fun BoxScope.BitmapDrawerPreview(
                 onUpdateCurrentDrawPosition = onUpdateCurrentDrawPosition,
                 onUpdateDrawDownPosition = onUpdateDrawDownPosition,
                 enabled = drawEnabled
+            )
+            .pointerPathEditHandler(
+                globalTouchPointersCount = globalTouchPointersCount,
+                enabled = pathEditEnabled,
+                onDown = onPathEditDown,
+                onMove = onPathEditMove,
+                onUp = onPathEditUp,
+                onCancel = onPathEditCancel
             )
             .clip(ShapeDefaults.extremeSmall)
             .transparencyChecker()
