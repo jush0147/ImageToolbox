@@ -31,6 +31,7 @@ import com.t8rin.imagetoolbox.core.domain.model.Pt
 import com.t8rin.imagetoolbox.core.domain.model.pt
 import com.t8rin.imagetoolbox.core.resources.Icons
 import com.t8rin.imagetoolbox.core.resources.R
+import com.t8rin.imagetoolbox.core.resources.icons.CropSmall
 import com.t8rin.imagetoolbox.core.resources.icons.Highlighter
 import com.t8rin.imagetoolbox.core.resources.icons.LineArrow
 import com.t8rin.imagetoolbox.core.resources.icons.Rectangle
@@ -58,7 +59,8 @@ internal fun QuickMarkupControls(
     onTextValueChange: (String) -> Unit,
     onDrawColorChange: (Color) -> Unit,
     onStrokeWidthChange: (Pt) -> Unit,
-    onAlphaChange: (Float) -> Unit
+    onAlphaChange: (Float) -> Unit,
+    onCropClick: () -> Unit
 ) {
     fun applyTool(selected: QuickMarkupTool) {
         component.updateDrawLineStyle(DrawLineStyle.None)
@@ -128,6 +130,12 @@ internal fun QuickMarkupControls(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            QuickToolChip(
+                selected = false,
+                label = stringResource(R.string.quick_markup_crop),
+                icon = Icons.Rounded.CropSmall,
+                onClick = onCropClick
+            )
             QuickToolChip(
                 selected = tool == QuickMarkupTool.Arrow,
                 label = stringResource(R.string.quick_markup_arrow),
