@@ -55,18 +55,16 @@ import com.t8rin.imagetoolbox.core.domain.model.pt
 import com.t8rin.imagetoolbox.core.resources.Icons
 import com.t8rin.imagetoolbox.core.resources.R
 import com.t8rin.imagetoolbox.core.resources.icons.AutoFixHigh
-import com.t8rin.imagetoolbox.core.resources.icons.Delete
+import com.t8rin.imagetoolbox.core.resources.icons.Share
 import com.t8rin.imagetoolbox.core.resources.icons.Tune
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.LocalSettingsState
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.rememberAppColorTuple
 import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.Picker
 import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.rememberImagePicker
-import com.t8rin.imagetoolbox.core.ui.utils.helper.Clipboard
 import com.t8rin.imagetoolbox.core.ui.utils.helper.isPortraitOrientationAsState
 import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalScreenSize
 import com.t8rin.imagetoolbox.core.ui.widget.AdaptiveBottomScaffoldLayoutScreen
 import com.t8rin.imagetoolbox.core.ui.widget.buttons.BottomButtonsBlock
-import com.t8rin.imagetoolbox.core.ui.widget.buttons.ShareButton
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.ExitWithoutSavingDialog
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.LoadingDialog
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.OneTimeImagePickingDialog
@@ -78,15 +76,15 @@ import com.t8rin.imagetoolbox.core.ui.widget.saver.ColorSaver
 import com.t8rin.imagetoolbox.core.ui.widget.saver.GradientGeometrySaver
 import com.t8rin.imagetoolbox.core.ui.widget.saver.GradientPaletteSaver
 import com.t8rin.imagetoolbox.core.ui.widget.saver.PtSaver
-import com.t8rin.imagetoolbox.core.ui.widget.sheets.ProcessImagesPreferenceSheet
 import com.t8rin.imagetoolbox.core.ui.widget.text.TopAppBarTitle
 import com.t8rin.imagetoolbox.core.ui.widget.utils.AutoContentBasedColors
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawBehavior
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.BitmapDrawer
-import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentNoDataControls
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentSecondaryControls
+import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupControls
+import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupTool
 import com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic.DrawComponent
 import kotlinx.coroutines.launch
 
@@ -167,6 +165,13 @@ fun DrawContent(
 
     var showLineAngle by rememberSaveable(component.drawBehavior) { mutableStateOf(false) }
 
+    var quickMarkupTool by rememberSaveable(component.drawBehavior) {
+        mutableStateOf(QuickMarkupTool.Arrow)
+    }
+    var quickMarkupText by rememberSaveable(component.drawBehavior) {
+        mutableStateOf("文字")
+    }
+
     val drawMode = component.drawMode
 
     var alpha by rememberSaveable(component.drawBehavior, drawMode) {
@@ -202,13 +207,7 @@ fun DrawContent(
     }
 
     val secondaryControls = @Composable {
-        DrawContentSecondaryControls(
-            component = component,
-            panEnabled = panEnabled,
-            onTogglePanEnabled = { panEnabled = !panEnabled },
-            isEraserOn = isEraserOn,
-            onToggleIsEraserOn = { isEraserOn = !isEraserOn }
-        )
+        DrawContentSecondaryControls(component = component)
     }
 
     val imageBitmap =
@@ -227,7 +226,7 @@ fun DrawContent(
     AdaptiveBottomScaffoldLayoutScreen(
         title = {
             TopAppBarTitle(
-                title = stringResource(R.string.draw),
+                title = stringResource(R.string.quick_markup_title),
                 input = component.drawBehavior.takeIf { it !is DrawBehavior.None },
                 isLoading = component.isImageLoading,
                 size = null,
@@ -260,45 +259,22 @@ fun DrawContent(
                         )
                     }
                 }
-                var editSheetData by remember {
-                    mutableStateOf(listOf<Uri>())
-                }
                 EnhancedIconButton(
                     onClick = component::smartRedact,
                     enabled = component.drawBehavior !is DrawBehavior.None && !component.isSmartRedacting
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.AutoFixHigh,
-                        contentDescription = "智慧遮蔽"
+                        contentDescription = stringResource(R.string.quick_markup_smart_redact)
                     )
                 }
-                ShareButton(
-                    enabled = component.drawBehavior !is DrawBehavior.None,
-                    onShare = component::shareBitmap,
-                    onCopy = {
-                        component.cacheCurrentImage(Clipboard::copy)
-                    },
-                    onEdit = {
-                        component.cacheCurrentImage { uri ->
-                            editSheetData = listOf(uri)
-                        }
-                    }
-                )
-                ProcessImagesPreferenceSheet(
-                    uris = editSheetData,
-                    visible = editSheetData.isNotEmpty(),
-                    onDismiss = {
-                        editSheetData = emptyList()
-                    },
-                    onNavigate = component.onNavigate
-                )
                 EnhancedIconButton(
-                    onClick = component::clearDrawing,
-                    enabled = component.drawBehavior !is DrawBehavior.None && component.havePaths
+                    onClick = component::shareBitmap,
+                    enabled = component.drawBehavior !is DrawBehavior.None && !component.isSaving
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Delete,
-                        contentDescription = stringResource(R.string.delete)
+                        imageVector = Icons.Outlined.Share,
+                        contentDescription = stringResource(R.string.quick_markup_share)
                     )
                 }
             }
@@ -348,30 +324,15 @@ fun DrawContent(
             }
         },
         controls = {
-            DrawContentControls(
+            QuickMarkupControls(
                 component = component,
-                secondaryControls = secondaryControls,
-                drawColor = drawColor,
+                tool = quickMarkupTool,
+                onToolChange = { quickMarkupTool = it },
+                textValue = quickMarkupText,
+                onTextValueChange = { quickMarkupText = it },
                 onDrawColorChange = { drawColor = it },
-                gradientPalette = gradientPalette,
-                onGradientPaletteChange = { gradientPalette = it },
-                gradientGeometry = gradientGeometry,
-                onGradientGeometryChange = { gradientGeometry = it },
-                gradientLength = gradientLength,
-                isGradientMirrored = isGradientMirrored,
-                onGradientLengthChange = { gradientLength = it },
-                onGradientMirroredChange = { isGradientMirrored = it },
-                isGradientAvailable = isGradientAvailable,
-                isGradientEnabled = isGradientEnabled && isGradientAvailable,
-                onGradientEnabledChange = { isGradientEnabled = it },
-                strokeWidth = strokeWidth,
                 onStrokeWidthChange = { strokeWidth = it },
-                brushSoftness = brushSoftness,
-                onBrushSoftnessChange = { brushSoftness = it },
-                alpha = alpha,
-                onAlphaChange = { alpha = it },
-                showLineAngle = showLineAngle,
-                onShowLineAngleChange = { showLineAngle = it }
+                onAlphaChange = { alpha = it }
             )
         },
         buttons = {
@@ -421,7 +382,7 @@ fun DrawContent(
         },
         canShowScreenData = component.drawBehavior !is DrawBehavior.None,
         showActionsInTopAppBar = false,
-        mainContentWeight = 0.65f
+        mainContentWeight = 0.78f
     )
 
     LoadingDialog(
