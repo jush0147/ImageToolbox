@@ -143,6 +143,7 @@ dependencies {
     baselineProfile(project(":benchmark"))
 
     implementation(projects.feature.draw)
+    implementation(projects.feature.settings)
 }
 
 baselineProfile {
