@@ -155,7 +155,7 @@ internal fun QuickMarkupControls(
             QuickToolChip(
                 selected = tool == QuickMarkupTool.Redact,
                 label = stringResource(R.string.quick_markup_redact),
-                icon = Icons.Outlined.VisibilityOff,
+                icon = Icons.Rounded.VisibilityOff,
                 onClick = { onToolChange(QuickMarkupTool.Redact) }
             )
         }
