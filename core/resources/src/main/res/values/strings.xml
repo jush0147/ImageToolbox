@@ -5530,4 +5530,9 @@
 
     <string name="quick_markup_number">Number</string>
 
+
+    <string name="quick_markup_adjust">Adjust</string>
+    <string name="quick_markup_smaller">Smaller</string>
+    <string name="quick_markup_larger">Larger</string>
+
 </resources>
