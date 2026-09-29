@@ -148,20 +148,7 @@ aboutLibraries {
 dependencies {
     baselineProfile(project(":benchmark"))
 
-    implementation(projects.feature.root)
-    implementation(projects.feature.mediaPicker)
-    implementation(projects.feature.quickTiles)
-
-    implementation(projects.lib.opencvTools)
-    implementation(projects.lib.neuralTools)
-    implementation(projects.lib.collages)
-
-    implementation(libs.bouncycastle.pkix)
-    implementation(libs.bouncycastle.provider)
-    implementation(libs.pdfbox)
-
-    "marketImplementation"(libs.quickie.bundled)
-    "fossImplementation"(libs.quickie.foss)
+    implementation(projects.feature.draw)
 }
 
 baselineProfile {
