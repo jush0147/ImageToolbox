@@ -134,7 +134,7 @@ internal fun QuickCropOverlay(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Done,
-                            contentDescription = stringResource(R.string.done)
+                            contentDescription = stringResource(R.string.quick_markup_apply_crop)
                         )
                     }
                 }
