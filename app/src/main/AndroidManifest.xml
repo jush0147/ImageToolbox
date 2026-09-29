@@ -9,12 +9,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk tools:overrideLibrary="
-        com.google.mlkit.vision.segmentation.subject,
-        androidx.pdf,
-        androidx.pdf.viewer.fragment,
-        androidx.pdf.document.service,
-        androidx.pdf.core" />
 
     <!-- Legacy save compatibility only. Modern Android uses scoped storage / Photo Picker. -->
     <uses-permission
