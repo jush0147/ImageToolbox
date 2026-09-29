@@ -1,3 +1,25 @@
+# 畫重點
+
+台灣取向的 Android 快速截圖標註工具。目標流程只有一條：
+
+**分享圖片 → 箭頭／框選／文字／螢光筆／遮蔽 → 智慧遮蔽 → 分享**
+
+目前 v0.1 直接建立在 [T8RIN/ImageToolbox](https://github.com/T8RIN/ImageToolbox) 的 Apache-2.0 程式碼上，保留原專案授權與著作權資訊。這個 fork 的方向不是做第二個大型圖片工具箱，而是把常用標註流程壓到最短。
+
+### v0.1 重點
+
+- 繁體中文介面
+- Android 分享圖片後直接進標註
+- 五個主要工具：箭頭、框選、文字、螢光筆、實心遮蔽
+- 本機智慧遮蔽：Email、台灣手機／市話、台灣身分證字號、信用卡號
+- OCR 在裝置上執行
+- Manifest 明確移除網路、相機、聯絡人、媒體投影與全檔案權限
+- 無帳號、無廣告
+
+---
+
+## Upstream README
+
 <div align="center">
 </br>
 <img src="./fastlane/metadata/android/en-US/images/logo/logo.png" width="200" />
