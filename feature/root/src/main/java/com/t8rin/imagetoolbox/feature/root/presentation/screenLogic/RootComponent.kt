@@ -129,7 +129,7 @@ class RootComponent @AssistedInject internal constructor(
     internal val childStack: Value<ChildStack<Screen, NavigationChild>> by lazy {
         childStack(
             source = navController,
-            initialConfiguration = Screen.Main,
+            initialConfiguration = Screen.Draw(),
             serializer = Screen.serializer(),
             handleBackButton = true,
             childFactory = { screen, context ->
