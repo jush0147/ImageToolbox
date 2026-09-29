@@ -1,28 +1,23 @@
 /*
  * ImageToolbox is an image editor for android
  * Copyright (c) 2026 T8RIN (Malik Mukhametzyanov)
+ * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * You should have received a copy of the Apache License
- * along with this program.  If not, see <http://www.apache.org/licenses/LICENSE-2.0>.
  */
 
 package com.t8rin.imagetoolbox.app.presentation
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import com.arkivanov.decompose.retainedComponent
+import com.t8rin.imagetoolbox.core.settings.presentation.model.toUiState
 import com.t8rin.imagetoolbox.core.ui.utils.ComposeActivity
-import com.t8rin.imagetoolbox.feature.root.presentation.RootContent
-import com.t8rin.imagetoolbox.feature.root.presentation.screenLogic.RootComponent
+import com.t8rin.imagetoolbox.core.ui.utils.navigation.Screen
+import com.t8rin.imagetoolbox.core.ui.utils.provider.ImageToolboxCompositionLocals
+import com.t8rin.imagetoolbox.feature.draw.presentation.DrawContent
+import com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic.DrawComponent
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -30,20 +25,44 @@ import javax.inject.Inject
 class AppActivity : ComposeActivity() {
 
     @Inject
-    lateinit var rootComponentFactory: RootComponent.Factory
+    lateinit var drawComponentFactory: DrawComponent.Factory
 
-    private val component: RootComponent by lazy {
+    private val component: DrawComponent by lazy {
         retainedComponent { componentContext ->
-            rootComponentFactory(
+            drawComponentFactory(
                 componentContext = componentContext,
-                initialSettingsState = settingsState
+                initialUri = null,
+                onGoBack = ::finish,
+                onNavigate = {}
             )
         }
     }
 
-    override fun handleIntent(intent: Intent) = component.handleDeeplinks(intent)
+    override fun handleIntent(intent: Intent) {
+        intent.firstImageUriOrNull()?.let(component::setUri)
+    }
 
     @Composable
-    override fun Content() = RootContent(component = component)
+    override fun Content() {
+        ImageToolboxCompositionLocals(
+            settingsState = settingsState.toUiState(),
+            currentScreen = Screen.Draw(),
+            onNavigate = {}
+        ) {
+            DrawContent(component = component)
+        }
+    }
+}
 
+private fun Intent.firstImageUriOrNull(): Uri? = when (action) {
+    Intent.ACTION_SEND -> {
+        (extras?.get(Intent.EXTRA_STREAM) as? Uri)
+            ?: clipData?.getItemAt(0)?.uri
+            ?: data
+    }
+
+    Intent.ACTION_VIEW,
+    Intent.ACTION_EDIT -> data ?: clipData?.getItemAt(0)?.uri
+
+    else -> null
 }
