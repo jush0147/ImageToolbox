@@ -27,6 +27,7 @@ android.namespace = "com.t8rin.imagetoolbox.feature.draw"
 dependencies {
     implementation(libs.trickle)
     implementation(libs.aire)
+    implementation(libs.mlkit.text.recognition.chinese)
 
     implementation(projects.core.filters)
     implementation(projects.feature.pickColor)
