@@ -41,11 +41,6 @@ android {
         versionCode = libs.versions.versionCode.get().toIntOrNull()
         versionName = System.getenv("VERSION_NAME") ?: libs.versions.versionName.get()
 
-        ndk {
-            abiFilters.clear()
-            //noinspection ChromeOsAbiSupport
-            abiFilters += supportedAbi.toSet()
-        }
     }
 
     androidResources {
