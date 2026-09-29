@@ -65,7 +65,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            resValue("string", "app_launcher_name", "Image Toolbox DEBUG")
+            resValue("string", "app_launcher_name", "畫重點 DEBUG")
             resValue("string", "file_provider", "com.t8rin.imagetoolbox.fileprovider.debug")
         }
         release {
@@ -75,7 +75,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            resValue("string", "app_launcher_name", "Image Toolbox")
+            resValue("string", "app_launcher_name", "畫重點")
             resValue("string", "file_provider", "com.t8rin.imagetoolbox.fileprovider")
         }
         create("benchmark") {
