@@ -343,7 +343,7 @@ fun DrawContent(
                         .aspectRatio(aspectRatio, isPortrait)
                         .fillMaxSize(),
                     panEnabled = panEnabled,
-                    onRequestFiltering = component::filter,
+                    onRequestFiltering = { bitmap, _ -> bitmap },
                     drawPathMode = drawPathMode,
                     backgroundColor = component.backgroundColor,
                     backgroundGradient = component.backgroundGradient,
