@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PKG="com.e04stuff.markit.debug"
+PKG="com.e04stuff.markit.candidate"
 ACTIVITY="com.t8rin.imagetoolbox.app.presentation.AppActivity"
 COMPONENT="$PKG/$ACTIVITY"
+AUTHORITY="com.e04stuff.markit.fileprovider.candidate"
 OUT_DIR="build/markit-smoke"
 mkdir -p "$OUT_DIR"
 
@@ -12,7 +13,7 @@ fail_with_logs() {
   adb exec-out screencap -p > "$OUT_DIR/failure.png" || true
   adb shell dumpsys activity activities > "$OUT_DIR/activities.txt" || true
   echo "===== Markit smoke-test log tail ====="
-  tail -n 160 "$OUT_DIR/logcat.txt" || true
+  tail -n 200 "$OUT_DIR/logcat.txt" || true
   exit 1
 }
 
@@ -26,18 +27,23 @@ assert_alive() {
   fi
 
   adb logcat -d > "$OUT_DIR/logcat-$stage.txt"
-  if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID" "$OUT_DIR/logcat-$stage.txt"; then
+  if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID|UnsatisfiedLinkError|NoClassDefFoundError" "$OUT_DIR/logcat-$stage.txt"; then
     echo "Fatal Android runtime error detected after: $stage"
     fail_with_logs
   fi
 
-  adb exec-out screencap -p > "$OUT_DIR/$stage.png"
+  adb exec-out screencap -p > "$OUT_DIR/$stage.png" || true
+}
+
+dump_ui() {
+  local target="$1"
+  adb shell uiautomator dump /data/local/tmp/markit-window.xml >/dev/null
+  adb pull /data/local/tmp/markit-window.xml "$target" >/dev/null
 }
 
 tap_text() {
   local wanted="$1"
-  adb shell uiautomator dump /data/local/tmp/markit-window.xml >/dev/null
-  adb pull /data/local/tmp/markit-window.xml "$OUT_DIR/window.xml" >/dev/null
+  dump_ui "$OUT_DIR/window.xml"
 
   local point
   point="$(python3 - "$OUT_DIR/window.xml" "$wanted" <<'PY'
@@ -67,6 +73,20 @@ PY
   adb shell input tap "$x" "$y"
 }
 
+tap_en_zh() {
+  local english="$1"
+  local chinese="$2"
+  dump_ui "$OUT_DIR/localized.xml"
+  if grep -Fq "text=\"$english\"" "$OUT_DIR/localized.xml" || grep -Fq "content-desc=\"$english\"" "$OUT_DIR/localized.xml"; then
+    tap_text "$english"
+  elif grep -Fq "text=\"$chinese\"" "$OUT_DIR/localized.xml" || grep -Fq "content-desc=\"$chinese\"" "$OUT_DIR/localized.xml"; then
+    tap_text "$chinese"
+  else
+    echo "Could not find localized UI node: $english / $chinese"
+    fail_with_logs
+  fi
+}
+
 APK="$(find app/build/outputs/apk/foss/debug -name '*x86_64*.apk' | head -n 1)"
 test -n "$APK"
 
@@ -74,12 +94,13 @@ adb install -r "$APK"
 adb logcat -c
 adb shell am force-stop "$PKG"
 
-# 1. Cold launch: catches Compose/runtime failures that compilation cannot.
+# 1. Cold launch catches Compose/Hilt/runtime startup failures.
 adb shell am start -W -n "$COMPONENT"
-sleep 4
+sleep 3
 assert_alive "launch"
 
-# Create a real image without external dependencies.
+# 2. Create a deterministic PNG, place it behind Markit's FileProvider, then
+# enter through ACTION_SEND using a real content:// URI.
 python3 - "$OUT_DIR/smoke.png" <<'PY'
 import struct
 import sys
@@ -114,17 +135,9 @@ png = (
 open(path, "wb").write(png)
 PY
 
-# Put the test image directly inside the debuggable app's private files directory.
-# This makes share-in independent of MediaStore and shared-storage providers.
 cat "$OUT_DIR/smoke.png" | adb shell run-as "$PKG" tee files/markit-smoke.png >/dev/null
-APP_DIR="$(adb shell run-as "$PKG" pwd | tr -d '\r')"
-if [ -z "$APP_DIR" ]; then
-  echo "Could not resolve Markit private data directory"
-  fail_with_logs
-fi
-IMAGE_URI="file://$APP_DIR/files/markit-smoke.png"
+IMAGE_URI="content://$AUTHORITY/files/markit-smoke.png"
 
-# 2. Real share-in path.
 adb logcat -c
 adb shell am start -W \
   -n "$COMPONENT" \
@@ -132,12 +145,10 @@ adb shell am start -W \
   -t image/png \
   --eu android.intent.extra.STREAM "$IMAGE_URI" \
   --grant-read-uri-permission
-sleep 5
+sleep 4
 assert_alive "share-in"
 
-# Confirm the redesigned editor actually rendered the two equal primary outcomes.
-adb shell uiautomator dump /data/local/tmp/markit-editor.xml >/dev/null
-adb pull /data/local/tmp/markit-editor.xml "$OUT_DIR/editor.xml" >/dev/null
+dump_ui "$OUT_DIR/editor.xml"
 grep -Eq 'text="Save"|text="儲存"' "$OUT_DIR/editor.xml" || {
   echo "Save action did not render"
   fail_with_logs
@@ -147,33 +158,93 @@ grep -Eq 'text="Share"|text="分享"' "$OUT_DIR/editor.xml" || {
   fail_with_logs
 }
 
-# 3. Exercise drawing runtime. Arrow is the default tool; draw inside the canvas.
+# 3. Exercise Smart Redact runtime. The synthetic image has no text, so the
+# expected functional result is "nothing found", but ML Kit must initialize
+# and complete without linkage/model/runtime failures.
 adb logcat -c
-adb shell input swipe 300 650 760 980 450
-sleep 3
-assert_alive "draw"
-
-# 4. Exercise save runtime.
-# Saving may intentionally finish the editor Activity, so judge this action by
-# Android runtime errors rather than by requiring the Activity to remain open.
-adb logcat -c
-if grep -q 'text="Save"' "$OUT_DIR/editor.xml"; then
-  tap_text "Save"
-else
-  tap_text "儲存"
-fi
-sleep 4
-adb logcat -d > "$OUT_DIR/logcat-save.txt"
-adb exec-out screencap -p > "$OUT_DIR/save.png" || true
-if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID" "$OUT_DIR/logcat-save.txt"; then
-  echo "Fatal Android runtime error detected after: save"
+tap_en_zh "Smart redact" "智慧遮蔽"
+sleep 6
+assert_alive "smart-redact"
+adb logcat -d > "$OUT_DIR/logcat-smart-redact.txt"
+if grep -E -q "MlKitException|TextRecognizer.*(Exception|ERROR)|com\.google\.mlkit.*(Exception|ERROR)" "$OUT_DIR/logcat-smart-redact.txt"; then
+  echo "Smart Redact runtime reported an ML Kit failure"
   fail_with_logs
 fi
 
-# 5. Exercise share runtime in a fresh editor session.
-# Save and Share are independent primary outcomes; do not make one test depend
-# on whether the other closes the editor.
+# 4. Exercise crop overlay and apply a no-op crop. This covers cache URI,
+# FileProvider and cropper runtime without depending on fragile drag geometry.
 adb logcat -c
+tap_en_zh "More options" "更多選項"
+sleep 1
+tap_en_zh "Crop" "裁切"
+sleep 3
+assert_alive "crop-open"
+tap_en_zh "Apply crop" "套用裁切"
+sleep 5
+assert_alive "crop-apply"
+
+# 5. Exercise drawing runtime.
+adb logcat -c
+adb shell input swipe 300 650 760 980 450
+sleep 2
+assert_alive "draw"
+
+# 6. Save must create a real, readable MediaStore image in Pictures/Markit.
+adb logcat -c
+tap_en_zh "Save" "儲存"
+
+saved_line=""
+for _ in $(seq 1 20); do
+  adb shell content query \
+    --uri content://media/external/images/media \
+    --projection _id:_display_name:relative_path \
+    > "$OUT_DIR/media-after-save.txt" 2>/dev/null || true
+
+  saved_line="$(grep 'relative_path=Pictures/Markit/' "$OUT_DIR/media-after-save.txt" | grep '_display_name=Markit' | tail -n 1 || true)"
+  if [ -n "$saved_line" ]; then
+    break
+  fi
+  sleep 1
+done
+
+if [ -z "$saved_line" ]; then
+  echo "Save did not create a Markit image in Pictures/Markit"
+  cat "$OUT_DIR/media-after-save.txt" || true
+  fail_with_logs
+fi
+
+saved_id="$(printf '%s\n' "$saved_line" | sed -n 's/.*_id=\([0-9][0-9]*\).*/\1/p')"
+if [ -z "$saved_id" ]; then
+  echo "Could not parse saved MediaStore row id"
+  fail_with_logs
+fi
+
+adb exec-out content read --uri "content://media/external/images/media/$saved_id" > "$OUT_DIR/saved-output.bin" || true
+python3 - "$OUT_DIR/saved-output.bin" <<'PY'
+import os
+import sys
+
+path = sys.argv[1]
+data = open(path, "rb").read()
+if len(data) < 1024:
+    raise SystemExit(f"saved image is unexpectedly small: {len(data)} bytes")
+known = (
+    data.startswith(b"\x89PNG\r\n\x1a\n")
+    or data.startswith(b"\xff\xd8\xff")
+    or (data.startswith(b"RIFF") and data[8:12] == b"WEBP")
+)
+if not known:
+    raise SystemExit("saved MediaStore entry is not a recognized PNG/JPEG/WebP image")
+print(f"Verified readable saved image: {len(data)} bytes")
+PY
+adb logcat -d > "$OUT_DIR/logcat-save.txt"
+if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID" "$OUT_DIR/logcat-save.txt"; then
+  echo "Fatal Android runtime error detected after save"
+  fail_with_logs
+fi
+
+# 7. Share in a fresh editor. Require both a newly cached image and an actual
+# Android chooser/resolver Activity, not merely a surviving Markit process.
 adb shell am start -W \
   -n "$COMPONENT" \
   -a android.intent.action.SEND \
@@ -183,20 +254,28 @@ adb shell am start -W \
 sleep 4
 assert_alive "share-fresh"
 
-adb shell uiautomator dump /data/local/tmp/markit-before-share.xml >/dev/null
-adb pull /data/local/tmp/markit-before-share.xml "$OUT_DIR/before-share.xml" >/dev/null
-if grep -q 'text="Share"' "$OUT_DIR/before-share.xml"; then
-  tap_text "Share"
-elif grep -q 'text="分享"' "$OUT_DIR/before-share.xml"; then
-  tap_text "分享"
-else
-  echo "Share action did not render in fresh editor"
+adb shell run-as "$PKG" find cache -type f 2>/dev/null | tr -d '\r' | sort > "$OUT_DIR/cache-before-share.txt" || true
+adb logcat -c
+tap_en_zh "Share" "分享"
+sleep 4
+
+adb shell run-as "$PKG" find cache -type f 2>/dev/null | tr -d '\r' | sort > "$OUT_DIR/cache-after-share.txt" || true
+comm -13 "$OUT_DIR/cache-before-share.txt" "$OUT_DIR/cache-after-share.txt" > "$OUT_DIR/cache-new-share.txt" || true
+if [ ! -s "$OUT_DIR/cache-new-share.txt" ]; then
+  echo "Share did not create a new cached output image"
   fail_with_logs
 fi
-sleep 5
-assert_alive "share"
 
-adb shell dumpsys activity activities > "$OUT_DIR/activities-final.txt"
-adb logcat -d > "$OUT_DIR/logcat-final.txt"
+adb shell dumpsys activity activities > "$OUT_DIR/share-activities.txt"
+if ! grep -E -q "ChooserActivity|ResolverActivity|IntentResolver" "$OUT_DIR/share-activities.txt"; then
+  echo "Android share chooser/resolver did not become active"
+  fail_with_logs
+fi
 
-echo "Markit emulator smoke test passed."
+adb logcat -d > "$OUT_DIR/logcat-share.txt"
+if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID|FileUriExposedException|IllegalArgumentException.*FileProvider" "$OUT_DIR/logcat-share.txt"; then
+  echo "Share runtime reported a fatal provider/intent error"
+  fail_with_logs
+fi
+
+echo "Markit latest-source runtime smoke passed."
