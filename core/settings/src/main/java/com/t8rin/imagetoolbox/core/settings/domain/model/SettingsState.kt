@@ -192,7 +192,7 @@ data class SettingsState(
                 saveToOriginalFolder = false,
                 deleteOriginalsAfterSave = false,
                 returnToExternalAppAfterSave = false,
-                filenamePrefix = "ResizedImage",
+                filenamePrefix = "Markit",
                 addSizeInFilename = false,
                 addOriginalFilename = false,
                 font = DomainFontFamily.System,
