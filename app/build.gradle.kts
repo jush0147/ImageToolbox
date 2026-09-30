@@ -74,9 +74,9 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
-            resValue("string", "app_launcher_name", "畫重點 DEBUG")
-            resValue("string", "file_provider", "com.e04stuff.markit.fileprovider.debug")
+            applicationIdSuffix = ".candidate"
+            resValue("string", "app_launcher_name", "畫重點 候選版")
+            resValue("string", "file_provider", "com.e04stuff.markit.fileprovider.candidate")
         }
         release {
             isMinifyEnabled = true
