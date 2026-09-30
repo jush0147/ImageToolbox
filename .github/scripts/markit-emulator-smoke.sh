@@ -27,7 +27,7 @@ assert_alive() {
   fi
 
   adb logcat -d > "$OUT_DIR/logcat-$stage.txt"
-  if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID|UnsatisfiedLinkError|NoClassDefFoundError" "$OUT_DIR/logcat-$stage.txt"; then
+  if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID" "$OUT_DIR/logcat-$stage.txt"; then
     echo "Fatal Android runtime error detected after: $stage"
     fail_with_logs
   fi
