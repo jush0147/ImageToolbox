@@ -25,6 +25,28 @@ jobs:
       # The exact app source at f1feb581 already passed the full emulator smoke
       # (cold launch, share-in, draw, save, and share). Since then only CI files
       # changed, so avoid re-gating delivery on flaky hosted-runner KVM access.
+      - name: Cache stable Markit debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: markit-debug-keystore-v1
+
+      - name: Ensure stable Markit debug keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey
+
       - name: Run FOSS draw tests
         run: ./gradlew :feature:draw:testFossDebugUnitTest --stacktrace
 
