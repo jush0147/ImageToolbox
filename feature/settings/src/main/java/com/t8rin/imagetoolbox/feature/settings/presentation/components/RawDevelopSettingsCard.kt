@@ -1,6 +1,7 @@
 /*
  * ImageToolbox is an image editor for android
  * Copyright (c) 2026 T8RIN (Malik Mukhametzyanov)
+ * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,12 +52,8 @@ import com.t8rin.imagetoolbox.core.ui.widget.modifier.ShapeDefaults
 import com.t8rin.imagetoolbox.core.ui.widget.preferences.PreferenceRow
 import com.t8rin.imagetoolbox.core.ui.widget.text.AutoSizeText
 import com.t8rin.imagetoolbox.core.ui.widget.text.TitleItem
-import com.t8rin.imagetoolbox.core.utils.appContext
-import com.t8rin.raw_coder.isRawUri
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun RawDevelopSettingsCard(
@@ -70,9 +67,7 @@ fun RawDevelopSettingsCard(
     var previousRawDevelopSettings by remember { mutableStateOf(rawDevelopSettings) }
 
     LaunchedEffect(uri) {
-        isRaw = withContext(Dispatchers.IO) {
-            uri?.takeUnless { it == Uri.EMPTY }?.let(appContext::isRawUri) == true
-        }
+        isRaw = uri?.takeUnless { it == Uri.EMPTY }?.isLikelyRawImage() == true
         if (!isRaw) showSheet = false
     }
 
@@ -192,4 +187,17 @@ private fun RawDevelopSettingsSheet(
             }
         }
     }
+}
+
+
+private fun Uri.isLikelyRawImage(): Boolean {
+    val extension = lastPathSegment
+        ?.substringAfterLast('.', missingDelimiterValue = "")
+        ?.lowercase()
+        .orEmpty()
+
+    return extension in setOf(
+        "dng", "cr2", "cr3", "nef", "nrw", "arw", "sr2",
+        "raf", "rw2", "orf", "pef", "srw", "raw"
+    )
 }
