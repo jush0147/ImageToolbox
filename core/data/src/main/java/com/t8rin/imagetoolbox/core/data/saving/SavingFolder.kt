@@ -137,23 +137,22 @@ internal data class SavingFolder private constructor(
             val filename = saveTarget.filename ?: return null
             val mimeType = saveTarget.mimeType.entry
 
+            val effectiveRelativePath = relativePath ?: when {
+                mimeType.startsWith("image/") -> "${Environment.DIRECTORY_PICTURES}/Markit"
+                else -> "${Environment.DIRECTORY_DOCUMENTS}/Markit"
+            }
+
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                 put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                put(
-                    MediaStore.MediaColumns.RELATIVE_PATH,
-                    relativePath ?: "${Environment.DIRECTORY_DOCUMENTS}/ImageToolbox"
-                )
+                put(MediaStore.MediaColumns.RELATIVE_PATH, effectiveRelativePath)
             }
 
-            val primaryDirectory = relativePath
-                ?.trimStart('/')
-                ?.substringBefore('/')
+            val primaryDirectory = effectiveRelativePath
+                .trimStart('/')
+                .substringBefore('/')
 
             val collectionUri = when {
-                relativePath == null -> MediaStore.Files.getContentUri(
-                    MediaStore.VOLUME_EXTERNAL_PRIMARY
-                )
 
                 primaryDirectory.equals(Environment.DIRECTORY_DOWNLOADS, ignoreCase = true) -> {
                     MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -217,7 +216,7 @@ internal data class SavingFolder private constructor(
                 outputStream = contentResolver.openOutputStream(uri)
                     ?: return null,
                 fileUri = uri,
-                savingPath = relativePath ?: "${Environment.DIRECTORY_DOCUMENTS}/ImageToolbox"
+                savingPath = effectiveRelativePath
             )
         }
 
