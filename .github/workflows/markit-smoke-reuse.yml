@@ -1,0 +1,44 @@
+name: Markit Smoke Reuse
+
+on:
+  push:
+    paths:
+      - '.github/workflows/markit-smoke-reuse.yml'
+      - '.github/scripts/markit-emulator-smoke.sh'
+  workflow_dispatch:
+
+jobs:
+  smoke-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reuse preserved x86_64 APK from run 113
+        uses: actions/download-artifact@v4
+        with:
+          name: markit-x86-debug
+          path: app/build/outputs/apk/foss/debug
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 36722254113
+
+      - name: Confirm reused APK
+        run: |
+          ls -lh app/build/outputs/apk/foss/debug
+          test -n "$(find app/build/outputs/apk/foss/debug -name '*x86_64*.apk' | head -n 1)"
+
+      - name: Run smoke test on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: bash .github/scripts/markit-emulator-smoke.sh
+
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markit-smoke-reuse-evidence
+          path: build/markit-smoke/
+          if-no-files-found: warn

@@ -3,6 +3,8 @@ name: Quick Markup CI
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - '.github/**'
   workflow_dispatch:
 
 concurrency:

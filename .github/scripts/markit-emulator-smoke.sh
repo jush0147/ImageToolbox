@@ -114,30 +114,15 @@ png = (
 open(path, "wb").write(png)
 PY
 
-# Insert the test image through MediaStore itself. This avoids relying on
-# emulated shared-storage paths, which are flaky on GitHub-hosted emulators.
-adb shell content insert \
-  --uri content://media/external/images/media \
-  --bind _display_name:s:markit-smoke.png \
-  --bind mime_type:s:image/png \
-  --bind relative_path:s:Pictures/MarkitSmoke >/dev/null
-sleep 1
-
-MEDIA_ID="$(adb shell content query \
-  --uri content://media/external/images/media \
-  --projection _id:_display_name \
-  | tr -d '\r' \
-  | grep '_display_name=markit-smoke.png' \
-  | sed -n 's/.*_id=\([0-9][0-9]*\).*/\1/p' \
-  | tail -n 1)"
-
-if [ -z "$MEDIA_ID" ]; then
-  echo "Could not create smoke image in MediaStore"
+# Put the test image directly inside the debuggable app's private files directory.
+# This makes share-in independent of MediaStore and shared-storage providers.
+cat "$OUT_DIR/smoke.png" | adb shell run-as "$PKG" tee files/markit-smoke.png >/dev/null
+APP_DIR="$(adb shell run-as "$PKG" pwd | tr -d '\r')"
+if [ -z "$APP_DIR" ]; then
+  echo "Could not resolve Markit private data directory"
   fail_with_logs
 fi
-
-IMAGE_URI="content://media/external/images/media/$MEDIA_ID"
-adb shell "content write --uri $IMAGE_URI" < "$OUT_DIR/smoke.png"
+IMAGE_URI="file://$APP_DIR/files/markit-smoke.png"
 
 # 2. Real share-in path.
 adb logcat -c
