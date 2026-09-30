@@ -31,6 +31,5 @@ dependencies {
     implementation(libs.mlkit.text.recognition.chinese)
 
     implementation(projects.core.filters)
-    implementation(projects.feature.pickColor)
     implementation(projects.lib.cropper)
 }
