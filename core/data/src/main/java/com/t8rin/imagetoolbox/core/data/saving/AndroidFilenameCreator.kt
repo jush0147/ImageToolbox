@@ -124,7 +124,8 @@ internal class AndroidFilenameCreator @Inject constructor(
             if (isOriginalEmpty) "" else saveTarget.imageInfo.height.toString()
         } else ""
 
-        val prefix = (oneTimePrefix ?: settingsState.filenamePrefix)\n            .takeUnless { it == "ResizedImage" } ?: "Markit"
+        val prefix = (oneTimePrefix ?: settingsState.filenamePrefix)
+            .takeUnless { it == "ResizedImage" } ?: "Markit"
         val suffix = settingsState.filenameSuffix
 
         val originalName = if (settingsState.addOriginalFilename && !isOriginalEmpty) {
