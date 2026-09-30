@@ -123,8 +123,8 @@ sleep 2
 MEDIA_ID="$(adb shell content query \
   --uri content://media/external/images/media \
   --projection _id:_display_name \
-  --where "_display_name='markit-smoke.png'" \
   | tr -d '\r' \
+  | grep '_display_name=markit-smoke.png' \
   | sed -n 's/.*_id=\([0-9][0-9]*\).*/\1/p' \
   | head -n 1)"
 
