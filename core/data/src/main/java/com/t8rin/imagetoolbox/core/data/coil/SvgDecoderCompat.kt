@@ -17,6 +17,7 @@ import coil3.request.Options
 import coil3.size.Size
 import coil3.size.pxOrElse
 import coil3.svg.SvgDecoder
+import coil3.svg.isSvg
 
 internal class SvgDecoderCompat(
     private val source: ImageSource,
