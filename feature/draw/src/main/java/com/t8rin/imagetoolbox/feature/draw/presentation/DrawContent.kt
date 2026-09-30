@@ -61,7 +61,7 @@ import com.t8rin.imagetoolbox.core.resources.icons.Share
 import com.t8rin.imagetoolbox.core.resources.icons.Tune
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.LocalSettingsState
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.rememberAppColorTuple
-import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.Picker
+import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.ImagePickerMode
 import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.rememberImagePicker
 import com.t8rin.imagetoolbox.core.ui.utils.helper.isPortraitOrientationAsState
 import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalScreenSize
@@ -69,7 +69,6 @@ import com.t8rin.imagetoolbox.core.ui.widget.AdaptiveBottomScaffoldLayoutScreen
 import com.t8rin.imagetoolbox.core.ui.widget.buttons.BottomButtonsBlock
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.ExitWithoutSavingDialog
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.LoadingDialog
-import com.t8rin.imagetoolbox.core.ui.widget.dialogs.OneTimeImagePickingDialog
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.OneTimeSaveLocationSelectionDialog
 import com.t8rin.imagetoolbox.core.ui.widget.enhanced.EnhancedIconButton
 import com.t8rin.imagetoolbox.core.ui.widget.other.DrawLockScreenOrientation
@@ -118,9 +117,12 @@ fun DrawContent(
 
     AutoContentBasedColors(component.imageBitmap)
 
-    val imagePicker = rememberImagePicker { uri: Uri ->
-        component.setUri(uri)
-    }
+    val imagePicker = rememberImagePicker(
+        mode = ImagePickerMode.PhotoPickerSingle,
+        onSuccess = { uris ->
+            uris.firstOrNull()?.let(component::setUri)
+        }
+    )
 
     val pickImage = imagePicker::pickImage
 
@@ -247,9 +249,6 @@ fun DrawContent(
         )
     }
 
-    var showOneTimeImagePickingDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
     AdaptiveBottomScaffoldLayoutScreen(
         title = {
             TopAppBarTitle(
@@ -409,9 +408,6 @@ fun DrawContent(
             BottomButtonsBlock(
                 isNoData = component.drawBehavior is DrawBehavior.None,
                 onSecondaryButtonClick = pickImage,
-                onSecondaryButtonLongClick = {
-                    showOneTimeImagePickingDialog = true
-                },
                 isSecondaryButtonVisible = component.drawBehavior !is DrawBehavior.Background,
                 onPrimaryButtonClick = {
                     saveBitmap(null)
@@ -432,12 +428,6 @@ fun DrawContent(
                 onSaveRequest = saveBitmap,
                 formatForFilenameSelection = component.getFormatForFilenameSelection(),
                 hasOriginalUri = component.uri != Uri.EMPTY
-            )
-            OneTimeImagePickingDialog(
-                onDismiss = { showOneTimeImagePickingDialog = false },
-                picker = Picker.Single,
-                imagePicker = imagePicker,
-                visible = showOneTimeImagePickingDialog
             )
         },
         enableNoDataScroll = false,

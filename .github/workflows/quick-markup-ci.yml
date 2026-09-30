@@ -24,6 +24,11 @@ jobs:
         run: ./gradlew :feature:draw:testFossDebugUnitTest --stacktrace
       - name: Build arm64 FOSS debug APK
         run: ./gradlew :app:assembleFossDebug -PquickMarkupAbi=arm64-v8a --stacktrace
+      - name: Verify required Markit runtime
+        run: |
+          APK=$(ls app/build/outputs/apk/foss/debug/*arm64-v8a*.apk | head -n 1)
+          unzip -l "$APK" | grep -q "lib/arm64-v8a/libtrickle.so"
+          grep -q "ImagePickerMode.PhotoPickerSingle" feature/draw/src/main/java/com/t8rin/imagetoolbox/feature/draw/presentation/DrawContent.kt
       - name: Report debug APK size
         run: |
           ls -lh app/build/outputs/apk/foss/debug/*.apk
