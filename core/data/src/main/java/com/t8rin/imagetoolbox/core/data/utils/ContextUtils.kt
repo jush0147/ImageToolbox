@@ -29,7 +29,9 @@ import kotlinx.coroutines.coroutineScope
 import java.io.OutputStream
 
 fun Context.isExternalStorageWritable(): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) true
+    // Android 10+ uses scoped storage. Apps can create their own MediaStore
+    // entries without the legacy WRITE_EXTERNAL_STORAGE permission.
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) true
     else ContextCompat.checkSelfPermission(
         this,
         Manifest.permission.WRITE_EXTERNAL_STORAGE
