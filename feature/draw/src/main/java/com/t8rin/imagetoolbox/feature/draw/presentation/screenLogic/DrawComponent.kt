@@ -38,13 +38,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntSize
 import androidx.core.net.toUri
 import com.arkivanov.decompose.ComponentContext
-import com.arkivanov.decompose.childContext
 import com.t8rin.imagetoolbox.core.domain.coroutines.DispatchersHolder
 import com.t8rin.imagetoolbox.core.domain.image.ImageCompressor
 import com.t8rin.imagetoolbox.core.domain.image.ImageGetter
 import com.t8rin.imagetoolbox.core.domain.image.ImageScaler
 import com.t8rin.imagetoolbox.core.domain.image.ImageShareProvider
-import com.t8rin.imagetoolbox.core.domain.image.ImageTransformer
 import com.t8rin.imagetoolbox.core.domain.image.model.ImageFormat
 import com.t8rin.imagetoolbox.core.domain.image.model.ImageInfo
 import com.t8rin.imagetoolbox.core.domain.model.GradientFill
@@ -54,10 +52,6 @@ import com.t8rin.imagetoolbox.core.domain.saving.FileController
 import com.t8rin.imagetoolbox.core.domain.saving.model.ImageSaveTarget
 import com.t8rin.imagetoolbox.core.domain.utils.smartJob
 import com.t8rin.imagetoolbox.core.domain.utils.update
-import com.t8rin.imagetoolbox.core.filters.domain.FilterProvider
-import com.t8rin.imagetoolbox.core.filters.domain.model.Filter
-import com.t8rin.imagetoolbox.core.filters.presentation.widget.FilterTemplateCreationSheetComponent
-import com.t8rin.imagetoolbox.core.filters.presentation.widget.addFilters.AddFiltersSheetComponent
 import com.t8rin.imagetoolbox.core.settings.domain.SettingsProvider
 import com.t8rin.imagetoolbox.core.ui.utils.BaseComponent
 import com.t8rin.imagetoolbox.core.ui.utils.helper.AppToastHost
@@ -86,18 +80,14 @@ class DrawComponent @AssistedInject internal constructor(
     @Assisted val onGoBack: () -> Unit,
     @Assisted val onNavigate: (Screen) -> Unit,
     private val fileController: FileController,
-    private val imageTransformer: ImageTransformer<Bitmap>,
     private val imageCompressor: ImageCompressor<Bitmap>,
     private val imageDrawApplier: ImageDrawApplier<Bitmap, Path, Color>,
     private val imageGetter: ImageGetter<Bitmap>,
     private val imageScaler: ImageScaler<Bitmap>,
     private val shareProvider: ImageShareProvider<Bitmap>,
-    private val filterProvider: FilterProvider<Bitmap>,
     private val settingsProvider: SettingsProvider,
     private val smartRedactionEngine: SmartRedactionEngine,
     dispatchersHolder: DispatchersHolder,
-    addFiltersSheetComponentFactory: AddFiltersSheetComponent.Factory,
-    filterTemplateCreationSheetComponentFactory: FilterTemplateCreationSheetComponent.Factory
 ) : BaseComponent(dispatchersHolder, componentContext) {
 
     init {
@@ -105,19 +95,6 @@ class DrawComponent @AssistedInject internal constructor(
             initialUri?.let(::setUri)
         }
     }
-
-    val addFiltersSheetComponent: AddFiltersSheetComponent = addFiltersSheetComponentFactory(
-        componentContext = componentContext.childContext(
-            key = "addFilters"
-        )
-    )
-
-    val filterTemplateCreationSheetComponent: FilterTemplateCreationSheetComponent =
-        filterTemplateCreationSheetComponentFactory(
-            componentContext = componentContext.childContext(
-                key = "filterTemplateCreationSheetComponentDraw"
-            )
-        )
 
     private val _drawOnBackgroundParams = fileController.savable(
         scope = componentScope,
@@ -611,14 +588,6 @@ class DrawComponent @AssistedInject internal constructor(
         savingJob = null
         _isSaving.value = false
     }
-
-    suspend fun filter(
-        bitmap: Bitmap,
-        filters: List<Filter<*>>,
-    ): Bitmap? = imageTransformer.transform(
-        image = bitmap,
-        transformations = filters.map { filterProvider.filterToTransformation(it) }
-    )
 
     fun cacheCurrentImage(onComplete: (Uri) -> Unit) {
         savingJob = trackProgress {
