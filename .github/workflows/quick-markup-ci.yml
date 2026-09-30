@@ -24,15 +24,34 @@ jobs:
         run: ./gradlew :feature:draw:testFossDebugUnitTest --stacktrace
       - name: Build arm64 FOSS debug APK
         run: ./gradlew :app:assembleFossDebug -PquickMarkupAbi=arm64-v8a --stacktrace
-      - name: Report APK size
+      - name: Build arm64 FOSS release APK
+        run: ./gradlew :app:assembleFossRelease -PquickMarkupAbi=arm64-v8a --stacktrace
+      - name: Report APK sizes and largest entries
         run: |
+          echo "DEBUG APK"
           ls -lh app/build/outputs/apk/foss/debug/*.apk
-          du -b app/build/outputs/apk/foss/debug/*.apk | tee apk-sizes.txt
+          du -b app/build/outputs/apk/foss/debug/*.apk | tee apk-debug-size.txt
+
+          echo "RELEASE APK"
+          ls -lh app/build/outputs/apk/foss/release/*.apk
+          du -b app/build/outputs/apk/foss/release/*.apk | tee apk-release-size.txt
+
+          release_apk="$(ls app/build/outputs/apk/foss/release/*.apk | head -n 1)"
+          unzip -l "$release_apk" | awk 'NR > 3 && $1 ~ /^[0-9]+$/ { print $1, $4 }' | sort -nr | head -n 80 | tee apk-largest-entries.txt
       - name: Upload arm64 debug APK
         uses: actions/upload-artifact@v4
         with:
           name: huazhongdian-arm64-debug
           path: |
             app/build/outputs/apk/foss/debug/*arm64-v8a*.apk
-            apk-sizes.txt
+            apk-debug-size.txt
+          if-no-files-found: error
+      - name: Upload arm64 release analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: huazhongdian-arm64-release-analysis
+          path: |
+            app/build/outputs/apk/foss/release/*.apk
+            apk-release-size.txt
+            apk-largest-entries.txt
           if-no-files-found: error
