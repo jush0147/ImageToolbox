@@ -40,6 +40,10 @@ android {
         versionCode = libs.versions.versionCode.get().toIntOrNull()
         versionName = System.getenv("VERSION_NAME") ?: libs.versions.versionName.get()
 
+        // Taiwan-first release: keep the default English resources and Traditional Chinese.
+        // Upstream ships dozens of translations that Markit does not need in v1.
+        resourceConfigurations += listOf("en", "zh-rTW")
+
     }
 
     androidResources {
