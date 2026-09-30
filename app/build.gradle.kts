@@ -141,7 +141,7 @@ android {
 }
 
 base {
-    archivesName = "huazhongdian-${android.defaultConfig.versionName}"
+    archivesName = "markit-${android.defaultConfig.versionName}"
 }
 
 aboutLibraries {
