@@ -29,7 +29,6 @@ dependencies {
     api(libs.ktor.logging)
     implementation(libs.coilGif)
     implementation(libs.coilSvg)
-    implementation(libs.coil.resvg)
     implementation(libs.trickle)
 
     implementation(libs.androidx.compose.ui.graphics)
@@ -59,7 +58,6 @@ dependencies {
     implementation(libs.toolbox.psd)
     implementation(libs.toolbox.apng)
     implementation(libs.toolbox.djvuCoder)
-    implementation(libs.pdfbox)
     implementation(libs.trickle)
 
     implementation(projects.core.domain)

@@ -49,7 +49,6 @@ dependencies {
     implementation(projects.core.di)
     implementation(projects.core.settings)
 
-    implementation(libs.dotlottie.android)
 
     // Navigation
     api(libs.decompose)

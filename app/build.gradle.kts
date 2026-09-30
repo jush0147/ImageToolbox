@@ -53,7 +53,8 @@ android {
         // upstream background-removal and face-detection features that are not exposed.
         ignoreAssetsPatterns += listOf(
             "u2netp.onnx",
-            "face_detection_yunet_2026may.onnx"
+            "face_detection_yunet_2026may.onnx",
+            "*.lottie"
         )
     }
 
