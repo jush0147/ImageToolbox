@@ -113,6 +113,15 @@ android {
             keepDebugSymbols.add("**/*.so")
             pickFirsts.add("lib/*/libcoder.so")
             pickFirsts.add("**/libdatstore_shared_counter.so")
+
+            // Quick Markup never exposes ImageToolbox's neural, OpenCV, warp or Aire tools.
+            // Keep their compile-time contracts for now, but do not ship their native engines.
+            excludes.add("**/libonnxruntime.so")
+            excludes.add("**/libopencv_java5.so")
+            excludes.add("**/libtrickle.so")
+            excludes.add("**/libaire.so")
+            excludes.add("**/libaire_filters.so")
+
             useLegacyPackaging = true
         }
         resources {
