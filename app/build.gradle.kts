@@ -35,7 +35,7 @@ android {
     defaultConfig {
         vectorDrawables.useSupportLibrary = true
 
-        applicationId = "com.jush0147.huazhongdian"
+        applicationId = "com.e04stuff.markit"
 
         versionCode = libs.versions.versionCode.get().toIntOrNull()
         versionName = System.getenv("VERSION_NAME") ?: libs.versions.versionName.get()
@@ -64,7 +64,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             resValue("string", "app_launcher_name", "畫重點 DEBUG")
-            resValue("string", "file_provider", "com.jush0147.huazhongdian.fileprovider.debug")
+            resValue("string", "file_provider", "com.e04stuff.markit.fileprovider.debug")
         }
         release {
             isMinifyEnabled = true
@@ -74,7 +74,7 @@ android {
                 "proguard-rules.pro"
             )
             resValue("string", "app_launcher_name", "畫重點")
-            resValue("string", "file_provider", "com.jush0147.huazhongdian.fileprovider")
+            resValue("string", "file_provider", "com.e04stuff.markit.fileprovider")
         }
         create("benchmark") {
             initWith(buildTypes.getByName("release"))
