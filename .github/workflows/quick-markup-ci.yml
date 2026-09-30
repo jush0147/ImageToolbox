@@ -3,8 +3,6 @@ name: Quick Markup CI
 on:
   push:
     branches: [master]
-    paths-ignore:
-      - '.github/**'
   workflow_dispatch:
 
 concurrency:
@@ -33,10 +31,17 @@ jobs:
           name: markit-x86-debug
           path: app/build/outputs/apk/foss/debug/*x86_64*.apk
           if-no-files-found: error
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test -r /dev/kvm
+          test -w /dev/kvm
       - name: Run Android emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           arch: x86_64
           profile: pixel_2
           disable-animations: true
