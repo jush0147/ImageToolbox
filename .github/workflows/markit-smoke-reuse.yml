@@ -52,6 +52,13 @@ jobs:
       - name: Build latest x86_64 candidate APK
         run: ./gradlew :app:assembleFossDebug -PquickMarkupAbi=x86_64 --stacktrace
 
+      - name: Preserve x86_64 candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: markit-x86-candidate
+          path: app/build/outputs/apk/foss/debug/*x86_64*.apk
+          if-no-files-found: error
+
       - name: Enable KVM when available
         id: kvm
         shell: bash
