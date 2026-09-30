@@ -298,7 +298,16 @@ class DrawComponent @AssistedInject internal constructor(
                     }
                 }
                 updateBitmap(data.image)
-                _imageFormat.update { data.imageInfo.imageFormat }
+                _imageFormat.update {
+                    when (val sourceFormat = data.imageInfo.imageFormat) {
+                        ImageFormat.Jpg,
+                        ImageFormat.Jpeg,
+                        is ImageFormat.Png,
+                        is ImageFormat.Webp -> sourceFormat
+
+                        else -> ImageFormat.Png.Lossless
+                    }
+                }
             } ?: run {
                 _isImageLoading.value = false
             }

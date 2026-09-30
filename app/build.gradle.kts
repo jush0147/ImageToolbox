@@ -44,6 +44,13 @@ android {
 
     androidResources {
         generateLocaleConfig = true
+
+        // Markit is a lightweight screenshot/markup tool. Do not package models for
+        // upstream background-removal and face-detection features that are not exposed.
+        ignoreAssetsPatterns += listOf(
+            "u2netp.onnx",
+            "face_detection_yunet_2026may.onnx"
+        )
     }
 
     flavorDimensions += "app"
@@ -121,6 +128,29 @@ android {
             excludes.add("**/libtrickle.so")
             excludes.add("**/libaire.so")
             excludes.add("**/libaire_filters.so")
+
+            // Markit only preserves JPG/JPEG/PNG/WebP output. These native codecs belong
+            // to ImageToolbox's advanced format support and are unreachable in Markit.
+            excludes.add("**/libcoder.so") // AVIF / HEIC
+            excludes.add("**/librjxlcoder.so")
+            excludes.add("**/libjxl.so")
+            excludes.add("**/libjxlcoder.so")
+            excludes.add("**/libjxl_cms.so")
+            excludes.add("**/libjxl_threads.so")
+            excludes.add("**/libraw_coder.so")
+            excludes.add("**/libdjvu-coder.so")
+            excludes.add("**/libtiffconverter.so")
+            excludes.add("**/libtiff.so")
+            excludes.add("**/libtifffactory.so")
+            excludes.add("**/libtiffsaver.so")
+            excludes.add("**/libopenjpeg.so")
+            excludes.add("**/libqoi-coder.so")
+            excludes.add("**/libvvc_jni.so")
+            excludes.add("**/libdav1d.so")
+            excludes.add("**/libjpeglicoder.so")
+            excludes.add("**/liboxipng_jni.so")
+            excludes.add("**/libimagequant_jni.so")
+            excludes.add("**/libgif_encoder.so")
 
             useLegacyPackaging = true
         }
