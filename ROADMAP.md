@@ -32,9 +32,9 @@
 
 ## v1 發布前
 
-- [ ] 改成輕量 App root，移除未使用的 ImageToolbox feature
+- [x] 改成輕量 App root，移除未使用的 ImageToolbox feature
 - [ ] 檢查 arm64 APK / AAB 大小
-- [ ] 決定正式 applicationId
+- [x] 決定正式 applicationId (`com.jush0147.huazhongdian`)
 - [ ] 換掉 ImageToolbox 原圖示與品牌
 - [ ] 實機檢查分享進入、儲存、返回 App 流程
 - [ ] 實機檢查智慧遮蔽誤判 / 漏判
