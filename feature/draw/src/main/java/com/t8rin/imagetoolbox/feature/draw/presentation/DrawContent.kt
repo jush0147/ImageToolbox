@@ -362,11 +362,18 @@ fun DrawContent(
                 )
             }
         },
-        controls = {
+        controls = { scaffoldState ->
             QuickMarkupControls(
                 component = component,
                 tool = quickMarkupTool,
-                onToolChange = { quickMarkupTool = it },
+                onToolChange = { selectedTool ->
+                    quickMarkupTool = selectedTool
+                    if (selectedTool == QuickMarkupTool.Adjust) {
+                        scope.launch {
+                            scaffoldState.bottomSheetState.partialExpand()
+                        }
+                    }
+                },
                 textValue = quickMarkupText,
                 onTextValueChange = { quickMarkupText = it },
                 numberValue = quickMarkupNumber,
