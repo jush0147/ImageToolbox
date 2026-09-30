@@ -36,8 +36,8 @@ assert_alive() {
 
 tap_text() {
   local wanted="$1"
-  adb shell uiautomator dump /sdcard/markit-window.xml >/dev/null
-  adb pull /sdcard/markit-window.xml "$OUT_DIR/window.xml" >/dev/null
+  adb shell uiautomator dump /data/local/tmp/markit-window.xml >/dev/null
+  adb pull /data/local/tmp/markit-window.xml "$OUT_DIR/window.xml" >/dev/null
 
   local point
   point="$(python3 - "$OUT_DIR/window.xml" "$wanted" <<'PY'
@@ -114,11 +114,14 @@ png = (
 open(path, "wb").write(png)
 PY
 
-adb push "$OUT_DIR/smoke.png" /sdcard/Pictures/markit-smoke.png >/dev/null
-adb shell am broadcast \
-  -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
-  -d file:///sdcard/Pictures/markit-smoke.png >/dev/null
-sleep 2
+# Insert the test image through MediaStore itself. This avoids relying on
+# emulated shared-storage paths, which are flaky on GitHub-hosted emulators.
+adb shell content insert \
+  --uri content://media/external/images/media \
+  --bind _display_name:s:markit-smoke.png \
+  --bind mime_type:s:image/png \
+  --bind relative_path:s:Pictures/MarkitSmoke >/dev/null
+sleep 1
 
 MEDIA_ID="$(adb shell content query \
   --uri content://media/external/images/media \
@@ -126,14 +129,15 @@ MEDIA_ID="$(adb shell content query \
   | tr -d '\r' \
   | grep '_display_name=markit-smoke.png' \
   | sed -n 's/.*_id=\([0-9][0-9]*\).*/\1/p' \
-  | head -n 1)"
+  | tail -n 1)"
 
 if [ -z "$MEDIA_ID" ]; then
-  echo "Could not resolve smoke image in MediaStore"
+  echo "Could not create smoke image in MediaStore"
   fail_with_logs
 fi
 
 IMAGE_URI="content://media/external/images/media/$MEDIA_ID"
+adb shell "content write --uri $IMAGE_URI" < "$OUT_DIR/smoke.png"
 
 # 2. Real share-in path.
 adb logcat -c
@@ -147,8 +151,8 @@ sleep 5
 assert_alive "share-in"
 
 # Confirm the redesigned editor actually rendered the two equal primary outcomes.
-adb shell uiautomator dump /sdcard/markit-editor.xml >/dev/null
-adb pull /sdcard/markit-editor.xml "$OUT_DIR/editor.xml" >/dev/null
+adb shell uiautomator dump /data/local/tmp/markit-editor.xml >/dev/null
+adb pull /data/local/tmp/markit-editor.xml "$OUT_DIR/editor.xml" >/dev/null
 grep -Eq 'text="Save"|text="儲存"' "$OUT_DIR/editor.xml" || {
   echo "Save action did not render"
   fail_with_logs
@@ -178,8 +182,8 @@ assert_alive "save"
 adb logcat -c
 adb shell input keyevent KEYCODE_BACK || true
 sleep 1
-adb shell uiautomator dump /sdcard/markit-before-share.xml >/dev/null
-adb pull /sdcard/markit-before-share.xml "$OUT_DIR/before-share.xml" >/dev/null
+adb shell uiautomator dump /data/local/tmp/markit-before-share.xml >/dev/null
+adb pull /data/local/tmp/markit-before-share.xml "$OUT_DIR/before-share.xml" >/dev/null
 if grep -q 'text="Share"' "$OUT_DIR/before-share.xml"; then
   tap_text "Share"
 else

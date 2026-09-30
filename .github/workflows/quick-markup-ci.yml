@@ -25,12 +25,18 @@ jobs:
       # do not spend time producing arm64 or release artifacts.
       - name: Build x86_64 FOSS debug APK for emulator
         run: ./gradlew :app:assembleFossDebug -PquickMarkupAbi=x86_64 --stacktrace
+      - name: Preserve x86_64 smoke APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: markit-x86-debug
+          path: app/build/outputs/apk/foss/debug/*x86_64*.apk
+          if-no-files-found: error
       - name: Run Android emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_2
           disable-animations: true
           script: bash .github/scripts/markit-emulator-smoke.sh
       - name: Upload emulator smoke evidence
