@@ -69,5 +69,5 @@ The product should feel like a focused Android utility. Existing upstream ImageT
 1. Canvas first. The image must keep most of the screen and remain directly interactive.
 2. Direct manipulation beats modes. Users should tap the thing they want to edit instead of entering a separate adjustment mode.
 3. Progressive controls. Show only the controls required by the current tool or selection.
-4. Fast exit. Save and share must always be obvious and close at hand.
+4. Save and share are equal primary outcomes. Both must stay obvious and directly reachable; neither may be demoted into overflow.
 5. Delete inherited complexity. If an ImageToolbox interaction does not make the primary flow faster, it does not belong in Markit v1.
