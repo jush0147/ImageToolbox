@@ -154,25 +154,44 @@ sleep 3
 assert_alive "draw"
 
 # 4. Exercise save runtime.
+# Saving may intentionally finish the editor Activity, so judge this action by
+# Android runtime errors rather than by requiring the Activity to remain open.
 adb logcat -c
 if grep -q 'text="Save"' "$OUT_DIR/editor.xml"; then
   tap_text "Save"
 else
   tap_text "儲存"
 fi
-sleep 5
-assert_alive "save"
+sleep 4
+adb logcat -d > "$OUT_DIR/logcat-save.txt"
+adb exec-out screencap -p > "$OUT_DIR/save.png" || true
+if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID" "$OUT_DIR/logcat-save.txt"; then
+  echo "Fatal Android runtime error detected after: save"
+  fail_with_logs
+fi
 
-# 5. Exercise share runtime. A system chooser may take focus; Markit's process must survive.
+# 5. Exercise share runtime in a fresh editor session.
+# Save and Share are independent primary outcomes; do not make one test depend
+# on whether the other closes the editor.
 adb logcat -c
-adb shell input keyevent KEYCODE_BACK || true
-sleep 1
+adb shell am start -W \
+  -n "$COMPONENT" \
+  -a android.intent.action.SEND \
+  -t image/png \
+  --eu android.intent.extra.STREAM "$IMAGE_URI" \
+  --grant-read-uri-permission
+sleep 4
+assert_alive "share-fresh"
+
 adb shell uiautomator dump /data/local/tmp/markit-before-share.xml >/dev/null
 adb pull /data/local/tmp/markit-before-share.xml "$OUT_DIR/before-share.xml" >/dev/null
 if grep -q 'text="Share"' "$OUT_DIR/before-share.xml"; then
   tap_text "Share"
-else
+elif grep -q 'text="分享"' "$OUT_DIR/before-share.xml"; then
   tap_text "分享"
+else
+  echo "Share action did not render in fresh editor"
+  fail_with_logs
 fi
 sleep 5
 assert_alive "share"
