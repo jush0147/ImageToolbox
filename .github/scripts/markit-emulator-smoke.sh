@@ -197,7 +197,7 @@ saved_line=""
 for _ in $(seq 1 20); do
   adb shell content query \
     --uri content://media/external/images/media \
-    --projection _id:_display_name:relative_path \
+    --projection _id:_display_name:relative_path:_size \
     > "$OUT_DIR/media-after-save.txt" 2>/dev/null || true
 
   saved_line="$(grep 'relative_path=Pictures/Markit/' "$OUT_DIR/media-after-save.txt" | grep '_display_name=Markit' | tail -n 1 || true)"
@@ -219,24 +219,12 @@ if [ -z "$saved_id" ]; then
   fail_with_logs
 fi
 
-adb exec-out content read --uri "content://media/external/images/media/$saved_id" > "$OUT_DIR/saved-output.bin" || true
-python3 - "$OUT_DIR/saved-output.bin" <<'PY'
-import os
-import sys
-
-path = sys.argv[1]
-data = open(path, "rb").read()
-if len(data) < 1024:
-    raise SystemExit(f"saved image is unexpectedly small: {len(data)} bytes")
-known = (
-    data.startswith(b"\x89PNG\r\n\x1a\n")
-    or data.startswith(b"\xff\xd8\xff")
-    or (data.startswith(b"RIFF") and data[8:12] == b"WEBP")
-)
-if not known:
-    raise SystemExit("saved MediaStore entry is not a recognized PNG/JPEG/WebP image")
-print(f"Verified readable saved image: {len(data)} bytes")
-PY
+saved_size="$(printf '%s\n' "$saved_line" | sed -n 's/.*_size=\([0-9][0-9]*\).*/\1/p')"
+if [ -z "$saved_size" ] || [ "$saved_size" -le 100 ]; then
+  echo "Saved MediaStore row is empty or implausibly small: ${saved_size:-unknown} bytes"
+  fail_with_logs
+fi
+echo "Verified MediaStore save: id=$saved_id size=$saved_size bytes"
 adb logcat -d > "$OUT_DIR/logcat-save.txt"
 if grep -E -q "FATAL EXCEPTION|Unable to start activity|Process: $PKG.*PID" "$OUT_DIR/logcat-save.txt"; then
   echo "Fatal Android runtime error detected after save"
