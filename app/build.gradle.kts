@@ -132,7 +132,7 @@ android {
 }
 
 base {
-    archivesName = "image-toolbox-${android.defaultConfig.versionName}"
+    archivesName = "huazhongdian-${android.defaultConfig.versionName}"
 }
 
 aboutLibraries {
