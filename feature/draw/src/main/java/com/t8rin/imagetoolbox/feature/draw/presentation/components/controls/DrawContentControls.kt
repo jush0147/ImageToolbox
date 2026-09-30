@@ -1,6 +1,7 @@
 /*
  * ImageToolbox is an image editor for android
  * Copyright (c) 2026 T8RIN (Malik Mukhametzyanov)
+ * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +57,6 @@ import com.t8rin.imagetoolbox.core.ui.widget.controls.selection.ImageFormatSelec
 import com.t8rin.imagetoolbox.core.ui.widget.controls.selection.MagnifierEnabledSelector
 import com.t8rin.imagetoolbox.core.ui.widget.modifier.ShapeDefaults
 import com.t8rin.imagetoolbox.core.ui.widget.modifier.container
-import com.t8rin.imagetoolbox.core.ui.widget.saver.ColorSaver
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawBehavior
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawLineStyle
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
@@ -68,10 +68,8 @@ import com.t8rin.imagetoolbox.feature.draw.presentation.components.DrawLineStyle
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.DrawModeSelector
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.DrawPathModeSelector
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.LineWidthSelector
-import com.t8rin.imagetoolbox.feature.draw.presentation.components.OpenColorPickerCard
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.canShowLineAngle
 import com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic.DrawComponent
-import com.t8rin.imagetoolbox.feature.pick_color.presentation.components.PickColorFromImageSheet
 
 @Composable
 internal fun DrawContentControls(
@@ -99,7 +97,6 @@ internal fun DrawContentControls(
     showLineAngle: Boolean,
     onShowLineAngleChange: (Boolean) -> Unit
 ) {
-    var showPickColorSheet by rememberSaveable { mutableStateOf(false) }
 
     val isPortrait by isPortraitOrientationAsState()
 
@@ -120,20 +117,6 @@ internal fun DrawContentControls(
             ) {
                 secondaryControls()
             }
-        }
-        AnimatedVisibility(
-            visible = drawMode !is DrawMode.SpotHeal && drawMode !is DrawMode.Warp,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            OpenColorPickerCard(
-                modifier = Modifier.fillMaxWidth(),
-                onOpen = {
-                    component.openColorPicker()
-                    showPickColorSheet = true
-                }
-            )
         }
         AnimatedVisibility(
             visible = drawMode !is DrawMode.PathEffect && drawMode !is DrawMode.Image && drawMode !is DrawMode.SpotHeal && drawMode !is DrawMode.Warp,
@@ -322,14 +305,4 @@ internal fun DrawContentControls(
         )
     }
 
-    var colorPickerColor by rememberSaveable(stateSaver = ColorSaver) { mutableStateOf(Color.Black) }
-    PickColorFromImageSheet(
-        visible = showPickColorSheet,
-        onDismiss = {
-            showPickColorSheet = false
-        },
-        bitmap = component.colorPickerBitmap,
-        onColorChange = { colorPickerColor = it },
-        color = colorPickerColor
-    )
 }
