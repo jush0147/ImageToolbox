@@ -4,35 +4,36 @@
  * Modifications Copyright (c) 2026 jush0147
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * You should have received a copy of the Apache License
- * along with this program.  If not, see <http://www.apache.org/licenses/LICENSE-2.0>.
  */
 
 package com.t8rin.imagetoolbox.feature.draw.presentation
 
-
 import android.net.Uri
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SheetValue
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,51 +44,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.t8rin.dynamic.theme.LocalDynamicThemeState
-import com.t8rin.imagetoolbox.core.domain.model.GradientGeometry
-import com.t8rin.imagetoolbox.core.domain.model.GradientPalette
-import com.t8rin.imagetoolbox.core.domain.model.coerceIn
 import com.t8rin.imagetoolbox.core.domain.model.pt
 import com.t8rin.imagetoolbox.core.resources.Icons
 import com.t8rin.imagetoolbox.core.resources.R
+import com.t8rin.imagetoolbox.core.resources.icons.ArrowBack
 import com.t8rin.imagetoolbox.core.resources.icons.AutoFixHigh
+import com.t8rin.imagetoolbox.core.resources.icons.CropSmall
+import com.t8rin.imagetoolbox.core.resources.icons.ImagesMode
+import com.t8rin.imagetoolbox.core.resources.icons.MoreVert
+import com.t8rin.imagetoolbox.core.resources.icons.Redo
+import com.t8rin.imagetoolbox.core.resources.icons.Save
 import com.t8rin.imagetoolbox.core.resources.icons.Share
-import com.t8rin.imagetoolbox.core.resources.icons.Tune
+import com.t8rin.imagetoolbox.core.resources.icons.Undo
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.LocalSettingsState
 import com.t8rin.imagetoolbox.core.settings.presentation.provider.rememberAppColorTuple
 import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.ImagePickerMode
 import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.rememberImagePicker
-import com.t8rin.imagetoolbox.core.ui.utils.helper.isPortraitOrientationAsState
-import com.t8rin.imagetoolbox.core.ui.utils.provider.LocalScreenSize
-import com.t8rin.imagetoolbox.core.ui.widget.AdaptiveBottomScaffoldLayoutScreen
-import com.t8rin.imagetoolbox.core.ui.widget.buttons.BottomButtonsBlock
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.ExitWithoutSavingDialog
-import com.t8rin.imagetoolbox.core.ui.widget.dialogs.LoadingDialog
-import com.t8rin.imagetoolbox.core.ui.widget.dialogs.OneTimeSaveLocationSelectionDialog
-import com.t8rin.imagetoolbox.core.ui.widget.enhanced.EnhancedIconButton
 import com.t8rin.imagetoolbox.core.ui.widget.other.DrawLockScreenOrientation
-import com.t8rin.imagetoolbox.core.ui.widget.saver.ColorSaver
-import com.t8rin.imagetoolbox.core.ui.widget.saver.GradientGeometrySaver
-import com.t8rin.imagetoolbox.core.ui.widget.saver.GradientPaletteSaver
-import com.t8rin.imagetoolbox.core.ui.widget.saver.PtSaver
-import com.t8rin.imagetoolbox.core.ui.widget.text.TopAppBarTitle
 import com.t8rin.imagetoolbox.core.ui.widget.utils.AutoContentBasedColors
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawBehavior
-import com.t8rin.imagetoolbox.feature.draw.domain.DrawMode
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.BitmapDrawer
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.QuickCropData
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.QuickCropOverlay
-import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.DrawContentSecondaryControls
-import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupControls
-import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.QuickMarkupTool
+import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.MarkitEditorControls
+import com.t8rin.imagetoolbox.feature.draw.presentation.components.controls.MarkitTool
 import com.t8rin.imagetoolbox.feature.draw.presentation.screenLogic.DrawComponent
-import kotlinx.coroutines.launch
 
 @Composable
 fun DrawContent(
@@ -95,12 +84,11 @@ fun DrawContent(
 ) {
     val settingsState = LocalSettingsState.current
     val themeState = LocalDynamicThemeState.current
-
     val appColorTuple = rememberAppColorTuple()
-
     val scope = rememberCoroutineScope()
 
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
+    var menuExpanded by rememberSaveable { mutableStateOf(false) }
 
     val onBack = {
         when (component.drawBehavior) {
@@ -123,342 +111,332 @@ fun DrawContent(
             uris.firstOrNull()?.let(component::setUri)
         }
     )
-
     val pickImage = imagePicker::pickImage
 
-    val saveBitmap: (oneTimeSaveLocationUri: String?) -> Unit = {
-        component.saveBitmap(
-            oneTimeSaveLocationUri = it
-        )
+    var tool by rememberSaveable(component.drawBehavior) {
+        mutableStateOf(MarkitTool.Arrow)
     }
-
-    val screenSize = LocalScreenSize.current
-    val isPortrait by isPortraitOrientationAsState()
-
-    var panEnabled by rememberSaveable(component.drawBehavior) { mutableStateOf(false) }
-
-    var strokeWidth by rememberSaveable(
-        component.drawBehavior,
-        stateSaver = PtSaver
-    ) { mutableStateOf(settingsState.defaultDrawLineWidth.pt) }
-
-    var drawColor by rememberSaveable(
-        component.drawBehavior,
-        stateSaver = ColorSaver
-    ) { mutableStateOf(settingsState.defaultDrawColor) }
-
-    var gradientPalette by rememberSaveable(
-        component.drawBehavior,
-        stateSaver = GradientPaletteSaver
-    ) {
-        mutableStateOf<GradientPalette>(GradientPalette.SoftRainbow)
-    }
-
-    var gradientGeometry by rememberSaveable(
-        component.drawBehavior,
-        stateSaver = GradientGeometrySaver
-    ) { mutableStateOf(GradientGeometry()) }
-
-    var gradientLength by rememberSaveable { mutableFloatStateOf(1f) }
-    var isGradientMirrored by rememberSaveable { mutableStateOf(false) }
-    var isGradientEnabled by rememberSaveable(component.drawBehavior) {
-        mutableStateOf(false)
-    }
-
-    var isEraserOn by rememberSaveable(component.drawBehavior) { mutableStateOf(false) }
-
-    var showLineAngle by rememberSaveable(component.drawBehavior) { mutableStateOf(false) }
-
-    var quickMarkupTool by rememberSaveable(component.drawBehavior) {
-        mutableStateOf(QuickMarkupTool.Arrow)
-    }
-    var quickMarkupText by rememberSaveable(component.drawBehavior) {
+    var textValue by rememberSaveable(component.drawBehavior) {
         mutableStateOf("文字")
     }
-    var quickMarkupNumber by rememberSaveable(component.drawBehavior) {
+    var numberValue by rememberSaveable(component.drawBehavior) {
         mutableIntStateOf(1)
     }
-    var quickCropData by remember(component.drawBehavior) {
-        mutableStateOf<QuickCropData?>(null)
+    var drawColor by rememberSaveable(component.drawBehavior) {
+        mutableStateOf(settingsState.defaultDrawColor)
+    }
+    var strokeWidth by rememberSaveable(component.drawBehavior) {
+        mutableStateOf(settingsState.defaultDrawLineWidth.pt)
+    }
+    var alpha by rememberSaveable(component.drawBehavior) {
+        mutableFloatStateOf(1f)
     }
     var selectedPathIndex by rememberSaveable(component.drawBehavior) {
         mutableStateOf<Int?>(null)
     }
+    var quickCropData by remember(component.drawBehavior) {
+        mutableStateOf<QuickCropData?>(null)
+    }
 
-    LaunchedEffect(
-        quickMarkupTool,
-        component.paths.size
-    ) {
-        val selectionInvalid = selectedPathIndex?.let {
-            it !in component.paths.indices
-        } == true
-
-        if (
-            quickMarkupTool != QuickMarkupTool.Adjust ||
-            selectionInvalid
-        ) {
+    LaunchedEffect(component.paths.size) {
+        if (selectedPathIndex?.let { it !in component.paths.indices } == true) {
             selectedPathIndex = null
         }
     }
 
-    val drawMode = component.drawMode
+    val imageBitmap = component.imageBitmap
+    val hasImage = imageBitmap != null && component.drawBehavior !is DrawBehavior.None
+    val busy = component.isSaving || component.isImageLoading || component.isSmartRedacting
 
-    var alpha by rememberSaveable(component.drawBehavior, drawMode) {
-        mutableFloatStateOf(if (drawMode is DrawMode.Highlighter) 0.4f else 1f)
-    }
-
-    var brushSoftness by rememberSaveable(component.drawBehavior, drawMode, stateSaver = PtSaver) {
-        mutableStateOf(if (drawMode is DrawMode.Neon) 35.pt else 0.pt)
-    }
-
-    val drawPathMode = component.drawPathMode
-
-    val drawLineStyle = component.drawLineStyle
-
-    val isGradientAvailable = drawLineStyle.supportsGradient && (
-            drawMode is DrawMode.Pen ||
-                    drawMode is DrawMode.Highlighter ||
-                    drawMode is DrawMode.Text
-            )
-    val activeGradientPalette = gradientPalette.takeIf {
-        isGradientEnabled && isGradientAvailable && !isEraserOn
-    }
-    val fillGradientGeometry = gradientGeometry.takeIf {
-        drawPathMode.isFilled && (drawMode is DrawMode.Pen || drawMode is DrawMode.Highlighter)
-    }
-
-    LaunchedEffect(drawMode, strokeWidth) {
-        strokeWidth = if (drawMode is DrawMode.Image) {
-            strokeWidth.coerceIn(10.pt, 120.pt)
-        } else {
-            strokeWidth.coerceIn(1.pt, 100.pt)
-        }
-    }
-
-    val secondaryControls = @Composable {
-        DrawContentSecondaryControls(component = component)
-    }
-
-    val imageBitmap =
-        component.imageBitmap ?: (component.drawBehavior as? DrawBehavior.Background)?.run {
-            remember(width, height) { ImageBitmap(width, height) }
-    } ?: remember {
-        ImageBitmap(
-            screenSize.widthPx,
-            screenSize.heightPx
-        )
-    }
-
-    AdaptiveBottomScaffoldLayoutScreen(
-        title = {
-            TopAppBarTitle(
-                title = stringResource(R.string.quick_markup_title),
-                input = component.drawBehavior.takeIf { it !is DrawBehavior.None },
-                isLoading = component.isImageLoading,
-                size = null,
-                originalSize = null
-            )
-        },
-        onGoBack = onBack,
-        shouldDisableBackHandler = component.drawBehavior is DrawBehavior.None,
-        actions = {
-            secondaryControls()
-        },
-        topAppBarPersistentActions = { scaffoldState ->
-            if (component.drawBehavior != DrawBehavior.None) {
-                if (isPortrait) {
-                    EnhancedIconButton(
-                        onClick = {
-                            scope.launch {
-                                if (scaffoldState.bottomSheetState.currentValue == SheetValue.Expanded) {
-                                    scaffoldState.bottomSheetState.partialExpand()
-                                } else {
-                                    scaffoldState.bottomSheetState.expand()
-                                }
-                            }
-                        },
-                    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(stringResource(R.string.quick_markup_title))
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Rounded.Tune,
-                            contentDescription = stringResource(R.string.properties)
+                            imageVector = Icons.Rounded.ArrowBack,
+                            contentDescription = null
                         )
                     }
-                }
-                EnhancedIconButton(
-                    onClick = component::smartRedact,
-                    enabled = component.drawBehavior !is DrawBehavior.None && !component.isSmartRedacting
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.AutoFixHigh,
-                        contentDescription = stringResource(R.string.quick_markup_smart_redact)
-                    )
-                }
-                EnhancedIconButton(
-                    onClick = component::shareBitmap,
-                    enabled = component.drawBehavior !is DrawBehavior.None && !component.isSaving
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Share,
-                        contentDescription = stringResource(R.string.quick_markup_share)
-                    )
-                }
-            }
-        },
-        mainContent = {
-            AnimatedContent(
-                targetState = imageBitmap,
-                transitionSpec = { fadeIn() togetherWith fadeOut() }
-            ) { imageBitmap ->
-                val direction = LocalLayoutDirection.current
-                val aspectRatio = imageBitmap.width / imageBitmap.height.toFloat()
-                BitmapDrawer(
-                    imageBitmap = imageBitmap,
-                    renderCache = component.renderCache,
-                    sourceKey = component.imageBitmap?.asAndroidBitmap() ?: component.drawBehavior,
-                    paths = component.paths,
-                    strokeWidth = strokeWidth,
-                    brushSoftness = brushSoftness,
-                    drawColor = drawColor.copy(alpha),
-                    gradientPalette = activeGradientPalette,
-                    gradientGeometry = fillGradientGeometry,
-                    gradientLength = gradientLength,
-                    isGradientMirrored = isGradientMirrored,
-                    onAddPath = { path ->
-                        component.addPath(path)
-                        if (quickMarkupTool == QuickMarkupTool.Number) {
-                            quickMarkupNumber++
-                        }
-                    },
-                    isEraserOn = isEraserOn,
-                    drawMode = drawMode,
-                    modifier = Modifier
-                        .padding(
-                            start = WindowInsets
-                                .displayCutout
-                                .asPaddingValues()
-                                .calculateStartPadding(direction)
-                        )
-                        .padding(16.dp)
-                        .aspectRatio(aspectRatio, isPortrait)
-                        .fillMaxSize(),
-                    panEnabled = panEnabled,
-                    onRequestFiltering = { bitmap, _ -> bitmap },
-                    drawPathMode = drawPathMode,
-                    backgroundColor = component.backgroundColor,
-                    backgroundGradient = component.backgroundGradient,
-                    drawLineStyle = drawLineStyle,
-                    helperGridParams = component.helperGridParams,
-                    showLineAngle = showLineAngle,
-                    onRemovePath = component::removePath,
-                    pathEditEnabled = quickMarkupTool == QuickMarkupTool.Adjust,
-                    selectedPathIndex = selectedPathIndex,
-                    onSelectedPathIndexChange = {
-                        selectedPathIndex = it
-                    },
-                    onPathTransformStart = component::beginPathTransform,
-                    onPathTransformPreview = component::previewPathTransform,
-                    onPathTransformFinish = component::finishPathTransform,
-                    onPathTransformCancel = component::cancelPathTransform
-                )
-            }
-        },
-        controls = { scaffoldState ->
-            QuickMarkupControls(
-                component = component,
-                tool = quickMarkupTool,
-                onToolChange = { selectedTool ->
-                    quickMarkupTool = selectedTool
-                    if (selectedTool == QuickMarkupTool.Adjust) {
-                        scope.launch {
-                            scaffoldState.bottomSheetState.partialExpand()
-                        }
-                    }
-                },
-                textValue = quickMarkupText,
-                onTextValueChange = { quickMarkupText = it },
-                numberValue = quickMarkupNumber,
-                drawColor = drawColor,
-                strokeWidth = strokeWidth,
-                onDrawColorChange = { drawColor = it },
-                onStrokeWidthChange = { strokeWidth = it },
-                onAlphaChange = { alpha = it },
-                onCropClick = {
-                    component.prepareCrop { bitmap, uri, size ->
-                        quickCropData = QuickCropData(
-                            bitmap = bitmap,
-                            uri = uri,
-                            imageSize = size
-                        )
-                    }
-                },
-                hasSelectedPath = selectedPathIndex != null,
-                onScaleSelectedDown = {
-                    selectedPathIndex?.let {
-                        component.scalePathAt(it, 0.8f)
-                    }
-                },
-                onScaleSelectedUp = {
-                    selectedPathIndex?.let {
-                        component.scalePathAt(it, 1.25f)
-                    }
-                },
-                onDeleteSelected = {
-                    selectedPathIndex?.let(component::removePathAt)
-                    selectedPathIndex = null
-                }
-            )
-        },
-        buttons = {
-            var showFolderSelectionDialog by rememberSaveable {
-                mutableStateOf(false)
-            }
-            BottomButtonsBlock(
-                isNoData = component.drawBehavior is DrawBehavior.None,
-                onSecondaryButtonClick = pickImage,
-                isSecondaryButtonVisible = component.drawBehavior !is DrawBehavior.Background,
-                onPrimaryButtonClick = {
-                    saveBitmap(null)
-                },
-                isPrimaryButtonVisible = component.drawBehavior !is DrawBehavior.None,
-                onPrimaryButtonLongClick = {
-                    showFolderSelectionDialog = true
                 },
                 actions = {
-                    if (isPortrait) it()
-                },
-                showNullDataButtonAsContainer = true,
-                drawBothStrokes = true
-            )
-            OneTimeSaveLocationSelectionDialog(
-                visible = showFolderSelectionDialog,
-                onDismiss = { showFolderSelectionDialog = false },
-                onSaveRequest = saveBitmap,
-                formatForFilenameSelection = component.getFormatForFilenameSelection(),
-                hasOriginalUri = component.uri != Uri.EMPTY
+                    if (hasImage) {
+                        IconButton(
+                            onClick = component::undo,
+                            enabled = component.canUndo && !busy
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Undo,
+                                contentDescription = stringResource(R.string.markit_undo)
+                            )
+                        }
+                        IconButton(
+                            onClick = component::redo,
+                            enabled = component.canRedo && !busy
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Redo,
+                                contentDescription = stringResource(R.string.markit_redo)
+                            )
+                        }
+                        IconButton(
+                            onClick = component::smartRedact,
+                            enabled = !busy
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AutoFixHigh,
+                                contentDescription = stringResource(R.string.quick_markup_smart_redact)
+                            )
+                        }
+                        Box {
+                            IconButton(
+                                onClick = { menuExpanded = true },
+                                enabled = !busy
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MoreVert,
+                                    contentDescription = stringResource(R.string.markit_more)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.quick_markup_crop)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.CropSmall,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        component.prepareCrop { bitmap, uri, size ->
+                                            quickCropData = QuickCropData(
+                                                bitmap = bitmap,
+                                                uri = uri,
+                                                imageSize = size
+                                            )
+                                        }
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.markit_replace_image)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.ImagesMode,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        pickImage()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             )
         },
-        enableNoDataScroll = false,
-        noDataControls = {},
-        canShowScreenData = component.drawBehavior !is DrawBehavior.None,
-        showActionsInTopAppBar = false,
-        mainContentWeight = 0.78f
-    )
+        bottomBar = {
+            if (hasImage) {
+                Surface(
+                    tonalElevation = 2.dp,
+                    shadowElevation = 3.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        MarkitEditorControls(
+                            component = component,
+                            tool = tool,
+                            onToolChange = { selectedTool ->
+                                tool = selectedTool
+                                selectedPathIndex = null
+                            },
+                            textValue = textValue,
+                            onTextValueChange = { textValue = it },
+                            numberValue = numberValue,
+                            drawColor = drawColor,
+                            strokeWidth = strokeWidth,
+                            onDrawColorChange = { drawColor = it },
+                            onStrokeWidthChange = { strokeWidth = it },
+                            onAlphaChange = { alpha = it },
+                            hasSelectedPath = selectedPathIndex != null,
+                            onScaleSelectedDown = {
+                                selectedPathIndex?.let { component.scalePathAt(it, 0.8f) }
+                            },
+                            onScaleSelectedUp = {
+                                selectedPathIndex?.let { component.scalePathAt(it, 1.25f) }
+                            },
+                            onDeleteSelected = {
+                                selectedPathIndex?.let(component::removePathAt)
+                                selectedPathIndex = null
+                            }
+                        )
+
+                        HorizontalDivider()
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { component.saveBitmap(null) },
+                                enabled = !busy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Save,
+                                    contentDescription = null
+                                )
+                                Text(stringResource(R.string.markit_save))
+                            }
+                            Button(
+                                onClick = component::shareBitmap,
+                                enabled = !busy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Share,
+                                    contentDescription = null
+                                )
+                                Text(stringResource(R.string.markit_share))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) { contentPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+        ) {
+            when {
+                component.isImageLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                !hasImage || imageBitmap == null -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ImagesMode,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.markit_empty_hint),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Button(onClick = pickImage) {
+                            Text(stringResource(R.string.pick_image))
+                        }
+                    }
+                }
+
+                else -> {
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val imageRatio = imageBitmap.width / imageBitmap.height.toFloat()
+                        val availableRatio = maxWidth.value / maxHeight.value
+                        val canvasModifier = if (imageRatio >= availableRatio) {
+                            Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(imageRatio)
+                        } else {
+                            Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(imageRatio)
+                        }
+
+                        BitmapDrawer(
+                            imageBitmap = imageBitmap,
+                            renderCache = component.renderCache,
+                            sourceKey = imageBitmap.asAndroidBitmap(),
+                            paths = component.paths,
+                            strokeWidth = strokeWidth,
+                            brushSoftness = 0.pt,
+                            drawColor = drawColor.copy(alpha = alpha),
+                            gradientPalette = null,
+                            gradientGeometry = null,
+                            gradientLength = 1f,
+                            isGradientMirrored = false,
+                            onAddPath = { path ->
+                                component.addPath(path)
+                                if (tool == MarkitTool.Number) {
+                                    numberValue++
+                                }
+                            },
+                            isEraserOn = false,
+                            drawMode = component.drawMode,
+                            modifier = canvasModifier,
+                            panEnabled = false,
+                            onRequestFiltering = { bitmap, _ -> bitmap },
+                            drawPathMode = component.drawPathMode,
+                            backgroundColor = component.backgroundColor,
+                            backgroundGradient = component.backgroundGradient,
+                            drawLineStyle = component.drawLineStyle,
+                            helperGridParams = component.helperGridParams,
+                            showLineAngle = false,
+                            onRemovePath = component::removePath,
+                            pathEditEnabled = true,
+                            directPathEditingEnabled = true,
+                            selectedPathIndex = selectedPathIndex,
+                            onSelectedPathIndexChange = {
+                                selectedPathIndex = it
+                            },
+                            onPathTransformStart = component::beginPathTransform,
+                            onPathTransformPreview = component::previewPathTransform,
+                            onPathTransformFinish = component::finishPathTransform,
+                            onPathTransformCancel = component::cancelPathTransform
+                        )
+                    }
+                }
+            }
+
+            if (busy && hasImage) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                )
+            }
+        }
+    }
 
     QuickCropOverlay(
         data = quickCropData,
         onDismiss = {
             quickCropData = null
         },
-        onApplied = { uri ->
+        onApplied = { uri: Uri ->
             quickCropData = null
             component.setUri(uri)
         }
-    )
-
-    LoadingDialog(
-        visible = component.isSaving || component.isImageLoading || component.isSmartRedacting,
-        onCancelLoading = component::cancelSaving,
-        canCancel = component.isSaving
     )
 
     ExitWithoutSavingDialog(
@@ -466,7 +444,9 @@ fun DrawContent(
             if (component.drawBehavior !is DrawBehavior.None) {
                 component.resetDrawBehavior()
                 themeState.updateColorTuple(appColorTuple)
-            } else component.onGoBack()
+            } else {
+                component.onGoBack()
+            }
         },
         onDismiss = { showExitDialog = false },
         visible = showExitDialog

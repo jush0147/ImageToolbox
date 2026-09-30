@@ -46,10 +46,13 @@ fun BoxScope.BitmapDrawerPreview(
     onUpdateDrawDownPosition: (Offset) -> Unit,
     drawEnabled: Boolean,
     pathEditEnabled: Boolean = false,
+    directPathEditEnabled: Boolean = false,
+    shouldPathEditAt: (Offset) -> Boolean = { false },
     onPathEditDown: (Offset) -> Unit = {},
     onPathEditMove: (Offset) -> Unit = {},
     onPathEditUp: (Offset) -> Unit = {},
     onPathEditCancel: () -> Unit = {},
+    onPathEditMiss: () -> Unit = {},
     helperGridParams: HelperGridParams,
     drawBitmapBorder: Boolean,
     beforeHelperGridModifier: Modifier = Modifier,
@@ -58,21 +61,42 @@ fun BoxScope.BitmapDrawerPreview(
         model = preview,
         modifier = Modifier
             .matchParentSize()
-            .pointerDrawHandler(
-                globalTouchPointersCount = globalTouchPointersCount,
-                onReceiveMotionEvent = onReceiveMotionEvent,
-                onInvalidate = onInvalidate,
-                onUpdateCurrentDrawPosition = onUpdateCurrentDrawPosition,
-                onUpdateDrawDownPosition = onUpdateDrawDownPosition,
-                enabled = drawEnabled
-            )
-            .pointerPathEditHandler(
-                globalTouchPointersCount = globalTouchPointersCount,
-                enabled = pathEditEnabled,
-                onDown = onPathEditDown,
-                onMove = onPathEditMove,
-                onUp = onPathEditUp,
-                onCancel = onPathEditCancel
+            .then(
+                if (directPathEditEnabled) {
+                    Modifier.pointerDrawOrPathEditHandler(
+                        globalTouchPointersCount = globalTouchPointersCount,
+                        onReceiveMotionEvent = onReceiveMotionEvent,
+                        onInvalidate = onInvalidate,
+                        onUpdateCurrentDrawPosition = onUpdateCurrentDrawPosition,
+                        onUpdateDrawDownPosition = onUpdateDrawDownPosition,
+                        drawEnabled = drawEnabled,
+                        pathEditEnabled = pathEditEnabled,
+                        shouldPathEditAt = shouldPathEditAt,
+                        onPathEditDown = onPathEditDown,
+                        onPathEditMove = onPathEditMove,
+                        onPathEditUp = onPathEditUp,
+                        onPathEditCancel = onPathEditCancel,
+                        onPathEditMiss = onPathEditMiss
+                    )
+                } else {
+                    Modifier
+                        .pointerDrawHandler(
+                            globalTouchPointersCount = globalTouchPointersCount,
+                            onReceiveMotionEvent = onReceiveMotionEvent,
+                            onInvalidate = onInvalidate,
+                            onUpdateCurrentDrawPosition = onUpdateCurrentDrawPosition,
+                            onUpdateDrawDownPosition = onUpdateDrawDownPosition,
+                            enabled = drawEnabled
+                        )
+                        .pointerPathEditHandler(
+                            globalTouchPointersCount = globalTouchPointersCount,
+                            enabled = pathEditEnabled,
+                            onDown = onPathEditDown,
+                            onMove = onPathEditMove,
+                            onUp = onPathEditUp,
+                            onCancel = onPathEditCancel
+                        )
+                }
             )
             .clip(ShapeDefaults.extremeSmall)
             .transparencyChecker()

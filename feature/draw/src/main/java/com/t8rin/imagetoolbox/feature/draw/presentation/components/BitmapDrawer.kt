@@ -147,6 +147,7 @@ fun BitmapDrawer(
     showLineAngle: Boolean = false,
     onRemovePath: (UiPathPaint) -> Unit = {},
     pathEditEnabled: Boolean = false,
+    directPathEditingEnabled: Boolean = false,
     selectedPathIndex: Int? = null,
     onSelectedPathIndexChange: (Int?) -> Unit = {},
     onPathTransformStart: () -> Unit = {},
@@ -273,12 +274,16 @@ fun BitmapDrawer(
                 pathEditOriginal = null
             }
 
-            val onPathEditDown: (Offset) -> Unit = { position ->
-                val index = paths.indices.reversed().firstOrNull { pathIndex ->
+            val pathIndexAt: (Offset) -> Int? = { position ->
+                paths.indices.reversed().firstOrNull { pathIndex ->
                     paths[pathIndex]
                         .selectionBounds(canvasSize)
                         .contains(position)
                 }
+            }
+
+            val onPathEditDown: (Offset) -> Unit = { position ->
+                val index = pathIndexAt(position)
 
                 onSelectedPathIndexChange(index)
                 pathEditIndex = index
@@ -946,13 +951,16 @@ fun BitmapDrawer(
                 onInvalidate = { invalidations++ },
                 onUpdateCurrentDrawPosition = { currentDrawPosition = it },
                 onUpdateDrawDownPosition = { drawDownPosition = it },
-                drawEnabled = !pathEditEnabled && !panEnabled && !isWarpInputLocked && pendingCommit == null && drawImageBitmap != null &&
+                drawEnabled = (!pathEditEnabled || directPathEditingEnabled) && !panEnabled && !isWarpInputLocked && pendingCommit == null && drawImageBitmap != null &&
                         (renderedPaths == paths || isEraserOn || (drawMode !is DrawMode.PathEffect && drawMode !is DrawMode.SpotHeal && drawMode !is DrawMode.Warp)),
                 pathEditEnabled = pathEditEnabled && pendingCommit == null && drawImageBitmap != null,
+                directPathEditEnabled = directPathEditingEnabled,
+                shouldPathEditAt = { position -> pathIndexAt(position) != null },
                 onPathEditDown = onPathEditDown,
                 onPathEditMove = previewPathMove,
                 onPathEditUp = onPathEditUp,
                 onPathEditCancel = onPathEditCancel,
+                onPathEditMiss = { onSelectedPathIndexChange(null) },
                 helperGridParams = helperGridParams,
                 drawBitmapBorder = settingsState.drawBitmapBorder
             )

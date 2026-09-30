@@ -174,3 +174,100 @@ fun Modifier.pointerPathEditHandler(
 } else {
     this
 }
+
+
+private enum class PointerInteraction {
+    Draw,
+    Edit
+}
+
+fun Modifier.pointerDrawOrPathEditHandler(
+    globalTouchPointersCount: MutableIntState,
+    onReceiveMotionEvent: (MotionEvent) -> Unit,
+    onInvalidate: () -> Unit,
+    onUpdateCurrentDrawPosition: (Offset) -> Unit,
+    onUpdateDrawDownPosition: (Offset) -> Unit,
+    drawEnabled: Boolean,
+    pathEditEnabled: Boolean,
+    shouldPathEditAt: (Offset) -> Boolean,
+    onPathEditDown: (Offset) -> Unit,
+    onPathEditMove: (Offset) -> Unit,
+    onPathEditUp: (Offset) -> Unit,
+    onPathEditCancel: () -> Unit,
+    onPathEditMiss: () -> Unit
+) = if (drawEnabled || pathEditEnabled) {
+    this.composed {
+        var interaction by remember {
+            mutableStateOf<PointerInteraction?>(null)
+        }
+
+        Modifier.pointerMotionEvents(
+            onDown = { pointerInputChange ->
+                interaction = null
+                if (globalTouchPointersCount.intValue <= 1) {
+                    val position = pointerInputChange.position
+                    interaction = if (pathEditEnabled && shouldPathEditAt(position)) {
+                        onPathEditDown(position)
+                        PointerInteraction.Edit
+                    } else if (drawEnabled) {
+                        onPathEditMiss()
+                        onReceiveMotionEvent(MotionEvent.Down)
+                        onUpdateCurrentDrawPosition(position)
+                        onUpdateDrawDownPosition(position)
+                        onInvalidate()
+                        PointerInteraction.Draw
+                    } else {
+                        null
+                    }
+
+                    if (interaction != null) {
+                        pointerInputChange.consume()
+                    }
+                }
+            },
+            onMove = { pointerInputChange ->
+                when (interaction) {
+                    PointerInteraction.Draw -> {
+                        onReceiveMotionEvent(MotionEvent.Move)
+                        onUpdateCurrentDrawPosition(pointerInputChange.position)
+                        pointerInputChange.consume()
+                        onInvalidate()
+                    }
+
+                    PointerInteraction.Edit -> {
+                        if (globalTouchPointersCount.intValue <= 1) {
+                            onPathEditMove(pointerInputChange.position)
+                            pointerInputChange.consume()
+                        } else {
+                            onPathEditCancel()
+                            interaction = null
+                        }
+                    }
+
+                    null -> Unit
+                }
+            },
+            onUp = { pointerInputChange ->
+                when (interaction) {
+                    PointerInteraction.Draw -> {
+                        onReceiveMotionEvent(MotionEvent.Up)
+                        onUpdateCurrentDrawPosition(pointerInputChange.position)
+                        pointerInputChange.consume()
+                        onInvalidate()
+                    }
+
+                    PointerInteraction.Edit -> {
+                        onPathEditUp(pointerInputChange.position)
+                        pointerInputChange.consume()
+                    }
+
+                    null -> Unit
+                }
+                interaction = null
+            },
+            delayAfterDownInMillis = smartDelayAfterDownInMillis(globalTouchPointersCount.intValue)
+        )
+    }
+} else {
+    this
+}

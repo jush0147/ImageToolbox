@@ -5500,4 +5500,12 @@
     <string name="quick_markup_smaller">縮小</string>
     <string name="quick_markup_larger">放大</string>
 
+    <string name="markit_undo">復原</string>
+    <string name="markit_redo">重做</string>
+    <string name="markit_more">更多選項</string>
+    <string name="markit_replace_image">更換圖片</string>
+    <string name="markit_empty_hint">選一張圖，畫完重點後直接儲存或分享。</string>
+    <string name="markit_save">儲存</string>
+    <string name="markit_share">分享</string>
+
 </resources>
