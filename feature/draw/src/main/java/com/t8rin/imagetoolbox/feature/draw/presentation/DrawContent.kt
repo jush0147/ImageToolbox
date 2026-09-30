@@ -69,6 +69,8 @@ import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.ImagePickerMode
 import com.t8rin.imagetoolbox.core.ui.utils.content_pickers.rememberImagePicker
 import com.t8rin.imagetoolbox.core.ui.widget.dialogs.ExitWithoutSavingDialog
 import com.t8rin.imagetoolbox.core.ui.widget.other.DrawLockScreenOrientation
+import com.t8rin.imagetoolbox.core.ui.widget.saver.ColorSaver
+import com.t8rin.imagetoolbox.core.ui.widget.saver.PtSaver
 import com.t8rin.imagetoolbox.core.ui.widget.utils.AutoContentBasedColors
 import com.t8rin.imagetoolbox.feature.draw.domain.DrawBehavior
 import com.t8rin.imagetoolbox.feature.draw.presentation.components.BitmapDrawer
@@ -122,10 +124,16 @@ fun DrawContent(
     var numberValue by rememberSaveable(component.drawBehavior) {
         mutableIntStateOf(1)
     }
-    var drawColor by rememberSaveable(component.drawBehavior) {
+    var drawColor by rememberSaveable(
+        component.drawBehavior,
+        stateSaver = ColorSaver
+    ) {
         mutableStateOf(settingsState.defaultDrawColor)
     }
-    var strokeWidth by rememberSaveable(component.drawBehavior) {
+    var strokeWidth by rememberSaveable(
+        component.drawBehavior,
+        stateSaver = PtSaver
+    ) {
         mutableStateOf(settingsState.defaultDrawLineWidth.pt)
     }
     var alpha by rememberSaveable(component.drawBehavior) {
