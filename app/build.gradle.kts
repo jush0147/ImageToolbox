@@ -118,8 +118,7 @@ android {
     packaging {
         jniLibs {
             keepDebugSymbols.add("**/*.so")
-            pickFirsts.add("lib/*/libcoder.so")
-            pickFirsts.add("**/libdatstore_shared_counter.so")
+                pickFirsts.add("**/libdatstore_shared_counter.so")
 
             // Quick Markup never exposes ImageToolbox's neural, OpenCV, warp or Aire tools.
             // Keep their compile-time contracts for now, but do not ship their native engines.
