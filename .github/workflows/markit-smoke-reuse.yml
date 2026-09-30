@@ -1,53 +1,85 @@
-name: Markit Smoke Reuse
+name: Markit Runtime Smoke
 
 on:
   push:
     paths:
       - '.github/workflows/markit-smoke-reuse.yml'
       - '.github/scripts/markit-emulator-smoke.sh'
+      - 'app/**'
+      - 'feature/draw/**'
+      - 'core/data/**'
+      - 'core/settings/**'
   workflow_dispatch:
 
+concurrency:
+  group: markit-runtime-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  smoke-only:
-    runs-on: ubuntu-latest
+  runtime-smoke:
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reuse preserved x86_64 APK from run 113
-        uses: actions/download-artifact@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          name: markit-x86-debug
-          path: app/build/outputs/apk/foss/debug
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: 36722254113
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
 
-      - name: Confirm reused APK
+      - name: Restore stable Markit debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: markit-debug-keystore-v1
+
+      - name: Ensure stable Markit debug keystore
         run: |
-          ls -lh app/build/outputs/apk/foss/debug
-          test -n "$(find app/build/outputs/apk/foss/debug -name '*x86_64*.apk' | head -n 1)"
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
-      - name: Enable KVM acceleration
+      - name: Build latest x86_64 candidate APK
+        run: ./gradlew :app:assembleFossDebug -PquickMarkupAbi=x86_64 --stacktrace
+
+      - name: Enable KVM when available
+        id: kvm
+        shell: bash
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          test -r /dev/kvm
-          test -w /dev/kvm
-          ls -l /dev/kvm
+          if [ -e /dev/kvm ]; then
+            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+            sudo udevadm control --reload-rules || true
+            sudo udevadm trigger --name-match=kvm || true
+            sudo chmod 666 /dev/kvm || true
+            ls -l /dev/kvm
+          else
+            echo "No /dev/kvm on this runner; emulator will use software acceleration."
+          fi
 
-      - name: Run smoke test on Android emulator
+      - name: Run latest-source runtime smoke
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 30
           arch: x86_64
           profile: pixel_2
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash .github/scripts/markit-emulator-smoke.sh
 
       - name: Upload smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: markit-smoke-reuse-evidence
+          name: markit-runtime-smoke-evidence
           path: build/markit-smoke/
           if-no-files-found: warn
